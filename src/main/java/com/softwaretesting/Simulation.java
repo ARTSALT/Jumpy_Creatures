@@ -14,16 +14,16 @@ public class Simulation {
     private final double factor;                // fator de conversão de moedas para a largura do horizonte
 
     public Simulation(int iterations, int numCreatures, int horizonWidth) {
-        if (iterations < 0 || numCreatures < 0 || horizonWidth < 0) {
-            throw new IllegalArgumentException("Os parâmetros não podem ser negativos.");
+        if (iterations <= 0){
+            throw new IllegalArgumentException("O número de iterações não pode ser negativo ou zero.");
         }
 
-        if (iterations == 0 || numCreatures == 0 || horizonWidth == 0) {
-            throw new IllegalArgumentException("Os parâmetros não podem ser zero.");
+        if (numCreatures <= 0) {
+            throw new IllegalArgumentException("O número de criaturas não pode ser negativo ou zero.");
         }
 
-        if (numCreatures > horizonWidth) {
-            throw new IllegalArgumentException("O número de criaturas não pode ser maior que a largura do horizonte.");
+        if (horizonWidth <= 0) {
+            throw new IllegalArgumentException("A largura do horizonte não pode ser negativa ou zero.");
         }
 
         this.iterations = iterations;
@@ -44,7 +44,7 @@ public class Simulation {
         for (int i = 0; i < iterations; i++) {
             for (Creature creature : creatures) {
                 // desloca a criatura proporcionalmente a quantidade de moedas e a largura do horizonte
-                creature.setPosition(creature.getPosition() + generateRandom() * creature.getCoins() * factor);
+                creature.setPosition((creature.getPosition() + generateRandom() * creature.getCoins()) * factor);
             }
         }
     }
@@ -61,5 +61,17 @@ public class Simulation {
         for (int i = 0; i < creatures.size(); i++) {
             System.out.println("Creature " + i + ": " + creatures.get(i).getPosition());
         }
+    }
+
+    public int getIterations() {
+        return iterations;
+    }
+
+    public int getHorizonWidth() {
+        return horizonWidth;
+    }
+
+    public List<Creature> getCreatures() {
+        return creatures;
     }
 }
