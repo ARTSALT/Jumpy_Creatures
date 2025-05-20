@@ -10,14 +10,19 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+
+import java.util.Arrays;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends ApplicationAdapter {
     SpriteBatch spriteBatch;
+    ShapeRenderer shapeRenderer;
 
     // a janela do jogo é dividida em duas viewports
     private Viewport gameViewport;
@@ -25,9 +30,12 @@ public class Main extends ApplicationAdapter {
 
     // texturas
     private Texture backgroundTexture;
+    private Texture buttonsTexture;
+    private TextureRegion playButton;
 
     // animação do zumbi
     Animation<TextureRegion> attacking;
+    Animation<TextureRegion> jumping;
     float stateTime = 0f;
     boolean playAttackAnimation = false;
 
@@ -42,21 +50,33 @@ public class Main extends ApplicationAdapter {
     @Override
     public void create() {
         spriteBatch = new SpriteBatch();
+        shapeRenderer = new ShapeRenderer();
 
         // define a viewport do jogo e da interface
-        gameViewport = new FitViewport(Gdx.graphics.getWidth() * 0.8f, Gdx.graphics.getHeight());
-        uiViewport = new FitViewport(Gdx.graphics.getWidth() * 0.2f, Gdx.graphics.getHeight());
+        gameViewport = new ExtendViewport(Gdx.graphics.getWidth() * 0.8f, Gdx.graphics.getHeight());
+        uiViewport = new ScreenViewport();
 
         backgroundTexture = new Texture("graveyard_background.png");
 
-        Texture spriteSheet = new Texture("attacking.png");
-        TextureRegion[][] tmp = TextureRegion.split(spriteSheet,
-            spriteSheet.getWidth()/4, spriteSheet.getHeight());
-        TextureRegion[] frames = new TextureRegion[4];
+        // carrega o spritesheet completo
+        Texture spriteSheet = new Texture("zombie_spritesheet.png");
 
-        System.arraycopy(tmp[0], 0, frames, 0, 4);
+        // separa o spritesheet em 4 keyframes de animação
+        TextureRegion[][] keyframes = TextureRegion.split(spriteSheet,
+            spriteSheet.getWidth() / 8, spriteSheet.getHeight() / 4);
 
-        attacking = new Animation<>(0.15f, frames);
+        // cada keyframe tem tamanho 8, mas a maioria das animações tem menos que 8 frames
+        TextureRegion[] attackingFrames = Arrays.copyOfRange(keyframes[0], 0, 4);   // 4 frames
+        TextureRegion[] jumpingFrames = Arrays.copyOfRange(keyframes[0], 0, 8);     // 8 frames
+        TextureRegion[] beingHitFrames = Arrays.copyOfRange(keyframes[0], 0, 3);    // 3 frames
+        TextureRegion[] dyingFrames = Arrays.copyOfRange(keyframes[0], 0, 5);       // 5 frames
+
+        attacking = new Animation<>(0.1f, attackingFrames);
+        jumping = new Animation<>(0.1f, jumpingFrames);
+
+        buttonsTexture = new Texture("buttons.png");
+        playButton = TextureRegion.split(
+            buttonsTexture, buttonsTexture.getWidth()/4, buttonsTexture.getHeight()/3)[0][0];
 
         // retângulos para colisão
         zombieRectangle = new Rectangle();
@@ -72,15 +92,14 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void resize(int width, int height) {
-        float gameWidth = width * 0.8f;     // jogo com 80% da largura
-        float uiWidth = width * 0.2f;       // interface com 20% da largura
+        float gameWidth = width * 0.8f;
 
-        // atualiza as viewports
-        gameViewport.update((int)gameWidth, height, true);
-        uiViewport.update((int)uiWidth, height, true);
+        gameViewport.update((int) gameWidth, height, true);
+        uiViewport.update(width - (int) gameWidth, height, true);
 
         // posiciona a viewport da interface na direita
-        uiViewport.setScreenX((int)gameWidth);
+        uiViewport.setScreenX((int) gameWidth);
+        uiViewport.setScreenY(0);
     }
 
     @Override
@@ -99,17 +118,30 @@ public class Main extends ApplicationAdapter {
         spriteBatch.end();
 
         // renderiza a interface
-        uiViewport.apply();
-        spriteBatch.setProjectionMatrix(uiViewport.getCamera().combined);
-
-        spriteBatch.begin();
         renderUI();
-        spriteBatch.end();
     }
 
     // renderiza a interface do usuário
     private void renderUI() {
+        uiViewport.apply();
 
+        // desenha o fundo da interface
+        shapeRenderer.setProjectionMatrix(uiViewport.getCamera().combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(0.2f, 0.2f, 0.2f, 1);
+        shapeRenderer.rect(0, 0, uiViewport.getScreenWidth(), uiViewport.getScreenHeight());
+        shapeRenderer.end();
+
+        // desenha o botão de play
+        float buttonWidth = playButton.getRegionWidth() * 0.6f;
+        float buttonHeight = playButton.getRegionHeight() * 0.6f;
+        float buttonX = uiViewport.getScreenWidth() / 2f - buttonWidth / 2f;
+        float buttonY = uiViewport.getScreenHeight() / 2f - buttonHeight / 3f;
+        spriteBatch.setProjectionMatrix(uiViewport.getCamera().combined);
+        spriteBatch.begin();
+        spriteBatch.draw(playButton, buttonX, buttonY,
+            buttonWidth, buttonHeight);
+        spriteBatch.end();
     }
 
     // função de controle de entrada do usuário
@@ -152,13 +184,15 @@ public class Main extends ApplicationAdapter {
             attacking.getKeyFrame(stateTime, false) :
             attacking.getKeyFrames()[0];
 
-        spriteBatch.draw(currentFrame, 0, 0, worldWidth/4, worldHeight/4);
+        spriteBatch.draw(currentFrame, worldWidth/4, worldHeight/4, worldWidth/4, worldHeight/4);
     }
 
     @Override
     public void dispose() {
         spriteBatch.dispose();
+        shapeRenderer.dispose();
         backgroundTexture.dispose();
+        buttonsTexture.dispose();
         attackSound.dispose();
         music.dispose();
     }
