@@ -13,11 +13,15 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends ApplicationAdapter {
     SpriteBatch spriteBatch;
-    FitViewport viewport;
+
+    // a janela do jogo é dividida em duas viewports
+    private Viewport gameViewport;
+    private Viewport uiViewport;
 
     // texturas
     private Texture backgroundTexture;
@@ -38,7 +42,10 @@ public class Main extends ApplicationAdapter {
     @Override
     public void create() {
         spriteBatch = new SpriteBatch();
-        viewport = new FitViewport(8, 5);   // viewport com 8 unidades de largura e 5 de altura
+
+        // define a viewport do jogo e da interface
+        gameViewport = new FitViewport(Gdx.graphics.getWidth() * 0.8f, Gdx.graphics.getHeight());
+        uiViewport = new FitViewport(Gdx.graphics.getWidth() * 0.2f, Gdx.graphics.getHeight());
 
         backgroundTexture = new Texture("graveyard_background.png");
 
@@ -65,7 +72,15 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height, true);
+        float gameWidth = width * 0.8f;     // jogo com 80% da largura
+        float uiWidth = width * 0.2f;       // interface com 20% da largura
+
+        // atualiza as viewports
+        gameViewport.update((int)gameWidth, height, true);
+        uiViewport.update((int)uiWidth, height, true);
+
+        // posiciona a viewport da interface na direita
+        uiViewport.setScreenX((int)gameWidth);
     }
 
     @Override
@@ -75,13 +90,26 @@ public class Main extends ApplicationAdapter {
 
         // limpa a tela e prepara o desenho
         ScreenUtils.clear(Color.BLACK);
-        viewport.apply();
-        spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
+        gameViewport.apply();
+        spriteBatch.setProjectionMatrix(gameViewport.getCamera().combined);
+
+        // renderiza o jogo
         spriteBatch.begin();
-
-        draw();     // desenha os elementos do jogo
-
+        draw();
         spriteBatch.end();
+
+        // renderiza a interface
+        uiViewport.apply();
+        spriteBatch.setProjectionMatrix(uiViewport.getCamera().combined);
+
+        spriteBatch.begin();
+        renderUI();
+        spriteBatch.end();
+    }
+
+    // renderiza a interface do usuário
+    private void renderUI() {
+
     }
 
     // função de controle de entrada do usuário
@@ -109,8 +137,8 @@ public class Main extends ApplicationAdapter {
 
     // função de desenho, a ordem é importante
     private void draw() {
-        float worldWidth = viewport.getWorldWidth();
-        float worldHeight = viewport.getWorldHeight();
+        float worldWidth = gameViewport.getWorldWidth();
+        float worldHeight = gameViewport.getWorldHeight();
 
         // desenha o background
         spriteBatch.draw(backgroundTexture, 0, 0, worldWidth, worldHeight);
