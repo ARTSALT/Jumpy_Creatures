@@ -5,20 +5,20 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.audio.Music;
-import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-
-import java.util.Arrays;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends ApplicationAdapter {
@@ -33,6 +33,11 @@ public class Main extends ApplicationAdapter {
     private Texture backgroundTexture;
     private Texture buttonsTexture;
     private TextureRegion playButton;
+    private Rectangle playButtonBounds;
+
+    // interface do usuário
+    private Stage uiStage;
+    private TextField nameInput;
 
     // efeitos sonoros e música
     private Music music;
@@ -58,12 +63,32 @@ public class Main extends ApplicationAdapter {
         buttonsTexture = new Texture("buttons.png");
         playButton = TextureRegion.split(
             buttonsTexture, buttonsTexture.getWidth()/4, buttonsTexture.getHeight()/3)[0][0];
+        playButtonBounds = new Rectangle(
+            uiViewport.getWorldWidth() / 2 - playButton.getRegionWidth() / 2f,
+            uiViewport.getWorldHeight() / 2 - playButton.getRegionHeight() / 2f,
+            playButton.getRegionWidth(), playButton.getRegionHeight());
 
         // carrega áudio e música
         music = Gdx.audio.newMusic(Gdx.files.internal("graveyard_trap.mp3"));
         music.setLooping(true);
         music.setVolume(.5f);   // 50% do volume original
         music.play();
+
+        // inicializa o Stage e os componentes da interface
+        uiStage = new Stage(uiViewport, spriteBatch);
+        Gdx.input.setInputProcessor(uiStage);
+
+        Skin skin = new Skin(Gdx.files.internal("skin/plain-james-ui.json"));
+
+        // filtra o campo de texto para aceitar apenas dígitos
+        TextField.TextFieldFilter digitsOnlyFilter =
+            (textField, c) -> Character.isDigit(c);
+
+        nameInput = new TextField("", skin);
+        nameInput.setMessageText("Zumbis");
+        nameInput.setTextFieldFilter(digitsOnlyFilter);
+
+        uiStage.addActor(nameInput);
     }
 
     @Override
@@ -95,29 +120,39 @@ public class Main extends ApplicationAdapter {
 
         // renderiza a interface
         renderUI();
+        uiStage.act(Gdx.graphics.getDeltaTime());
+        uiStage.draw();
     }
 
     // renderiza a interface do usuário
     private void renderUI() {
         uiViewport.apply();
 
-        // desenha o fundo da interface
+        // background da interface
         shapeRenderer.setProjectionMatrix(uiViewport.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(0.2f, 0.2f, 0.2f, 1);
         shapeRenderer.rect(0, 0, uiViewport.getScreenWidth(), uiViewport.getScreenHeight());
         shapeRenderer.end();
 
-        // desenha o botão de play
+        // botão de play
         float buttonWidth = playButton.getRegionWidth() * 0.6f;
         float buttonHeight = playButton.getRegionHeight() * 0.6f;
         float buttonX = uiViewport.getScreenWidth() / 2f - buttonWidth / 2f;
         float buttonY = uiViewport.getScreenHeight() / 2f - buttonHeight / 3f;
+
+        // atualiza o retângulo do botão
+        playButtonBounds.set(buttonX, buttonY, buttonWidth, buttonHeight);
+
+        // desenha o botão
         spriteBatch.setProjectionMatrix(uiViewport.getCamera().combined);
         spriteBatch.begin();
-        spriteBatch.draw(playButton, buttonX, buttonY,
-            buttonWidth, buttonHeight);
+        spriteBatch.draw(playButton, buttonX, buttonY, buttonWidth, buttonHeight);
         spriteBatch.end();
+
+        // desenha a caixa de texto acima do botão
+        nameInput.setSize(buttonWidth * 1.5f, 40);
+        nameInput.setPosition(buttonX - buttonWidth * 0.2f, buttonY + buttonHeight + 10);
     }
 
     // função de controle de entrada do usuário
@@ -126,12 +161,26 @@ public class Main extends ApplicationAdapter {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             Gdx.app.exit();
         }
+
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            // pega a posição do clique do mouse
+            int mouseX = Gdx.input.getX();
+            int mouseY = Gdx.input.getY();
+
+            // converte para coordenadas da viewport
+            Vector3 worldCoords = uiViewport.unproject(new Vector3(mouseX, mouseY, 0));
+
+            // verifica se clicou no botão
+            if (playButtonBounds.contains(worldCoords.x, worldCoords.y)) {
+                System.out.println("Botão clicado!");
+                System.out.println("Número de zumbis: " + nameInput.getText());
+            }
+        }
     }
 
     // função de lógica do jogo
     private void logic() {
         z.logic();
-
     }
 
     // função de desenho, a ordem é importante
@@ -153,5 +202,6 @@ public class Main extends ApplicationAdapter {
         backgroundTexture.dispose();
         buttonsTexture.dispose();
         music.dispose();
+        uiStage.dispose();
     }
 }
