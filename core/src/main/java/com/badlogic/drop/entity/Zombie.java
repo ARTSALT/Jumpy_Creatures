@@ -21,6 +21,7 @@ public class Zombie {
 
     // spritesheet e texturas
     private static Texture spriteSheet;
+    private static Texture coinTexture;
 
     // animações do zumbi
     private static Animation<TextureRegion> attacking;
@@ -45,6 +46,7 @@ public class Zombie {
 
     // sprite com posição e tamanho
     private final Sprite sprite;
+    private final Sprite coinSprite;
 
     public Zombie() {
         this(1000000, 0);
@@ -78,6 +80,11 @@ public class Zombie {
             200,
             500
         );
+
+        // define a posição e o tamanho do sprite da moeda
+        coinSprite = new Sprite(coinTexture);
+        coinSprite.setBounds(sprite.getX() + sprite.getWidth() / 2f - 50f, sprite.getY() + 60f,
+            50, 60);
     }
 
     public void logic() {
@@ -103,6 +110,9 @@ public class Zombie {
             playJumpAnimation = true; // ativa a animação de pulo
             stateTime = 0;            // reinicia o tempo da animação
         }
+
+        // atualiza a posição da moeda
+        coinSprite.setPosition(sprite.getX() + sprite.getWidth() / 2f - 50f, sprite.getY() + 60f);
     }
 
     public void jump(float x, float y) {
@@ -134,6 +144,7 @@ public class Zombie {
 
         // Desenha o sprite
         sprite.draw(spriteBatch);
+        coinSprite.draw(spriteBatch);
     }
 
     // métodos estáticos
@@ -161,6 +172,12 @@ public class Zombie {
 
         // carrega o som de ataque
         attackSound = Gdx.audio.newSound(Gdx.files.internal(audioPath));
+
+        // carrega a textura da moeda
+        if (coinTexture != null) {
+            coinTexture.dispose();
+        }
+        coinTexture = new Texture(Gdx.files.internal("coin.png"));
     }
 
     public static void unloadResources() {
@@ -172,6 +189,11 @@ public class Zombie {
         if (attackSound != null) {
             attackSound.dispose();
             attackSound = null;
+        }
+
+        if (coinTexture != null) {
+            coinTexture.dispose();
+            coinTexture = null;
         }
     }
 

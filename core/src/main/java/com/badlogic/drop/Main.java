@@ -201,19 +201,28 @@ public class Main extends ApplicationAdapter {
         ((OrthographicCamera) gameViewport.getCamera()).zoom = cameraZoom;
         gameViewport.getCamera().update();
 
-        // verifica se o botão de play foi clicado
-        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+        // processa a entrada com ENTER
+        boolean enterPressed = Gdx.input.isKeyJustPressed(Input.Keys.ENTER);
+
+        // verifica se o botão de play foi clicado ou se a tecla ENTER foi pressionada
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) || enterPressed) {
             int mouseX = Gdx.input.getX();
             int mouseY = Gdx.input.getY();
 
             Vector3 worldCoords = uiViewport.unproject(new Vector3(mouseX, mouseY, 0));
-            if (playButtonBounds.contains(worldCoords.x, worldCoords.y)) {
-                int numZumbis = Integer.parseInt(nameInput.getText());
-                System.out.println("Botão clicado!");
-                System.out.println("Número de zumbis: " + numZumbis);
+            if (playButtonBounds.contains(worldCoords.x, worldCoords.y)
+                || enterPressed) {
+                String input = nameInput.getText();
+                try {
+                    int numZumbis = Integer.parseInt(input);
+                    System.out.println("Botão clicado!");
+                    System.out.println("Número de zumbis: " + numZumbis);
 
-                // inicializa a simulação com o número de zumbis
-                simulation = new Simulation(numZumbis, (int) gameViewport.getWorldWidth());
+                    // inicializa a simulação com o número de zumbis
+                    simulation = new Simulation(numZumbis, (int) gameViewport.getWorldWidth());
+                } catch (Exception e) {
+                    System.err.println("Erro na caixa de entrada: " + e.getMessage());
+                }
             }
         }
 
