@@ -37,9 +37,7 @@ public class Zombie {
     // retângulos para colisão entre zumbis
     Rectangle zombieRectangle;
 
-    // Vetor de velocidade
-    private Vector2 velocity;
-    private final float jumpPower = 1000f;
+    ParabolicMovement parm;
 
     Sprite sprite;
     float x;
@@ -78,7 +76,6 @@ public class Zombie {
         x = 100;
         y = 100;
 
-
         // carrega o spritesheet completo
         spriteSheet = new Texture("zombie_spritesheet.png");
 
@@ -101,13 +98,15 @@ public class Zombie {
         // retângulos para colisão
         zombieRectangle = new Rectangle();
 
-        // inicializa o vetor de velocidade
-        velocity = new Vector2(0, 0);
-
         sprite = new Sprite();
         sprite.setPosition(x, y);
 
-
+        parm = new ParabolicMovement(
+            new Vector2(sprite.getX(), sprite.getY()),
+            new Vector2(sprite.getX() + 100, sprite.getY()),
+            200,
+            500
+        );
     }
 
     public void logic() {
@@ -118,19 +117,22 @@ public class Zombie {
             attackSound.play();         // toca o som de ataque
         }
 
-        // TODO Under Testing
-        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && !playJumpAnimation) {
-            velocity.set(velocity.x, velocity.y + jumpPower);
-            stateTime = 0;
-            playJumpAnimation = true; // ativa a animação de pulo
-        }
-
         // reinicia a animação de ataque se ela já terminou
         if (playAttackAnimation && attacking.isAnimationFinished(stateTime)) {
             playAttackAnimation = false;
+            sprite.setY(y);
         }
 
+        // Para a animação de salto
+        if (playJumpAnimation && sprite.getY() == (y + sprite.getHeight())) {
+            playJumpAnimation = false; // desativa a animação de pulo
+        }
 
+        // verifica se a tecla 'SPACE' foi pressionada
+        if (Gdx.input.isKeyPressed(Input.Keys.SPACE) && !playJumpAnimation) {
+            playJumpAnimation = true; // ativa a animação de pulo
+            stateTime = 0;            // reinicia o tempo da animação
+        }
     }
 
     public void draw(SpriteBatch spriteBatch) {
@@ -139,31 +141,21 @@ public class Zombie {
             stateTime += Gdx.graphics.getDeltaTime();
         }
 
+        if (playJumpAnimation) {
+            stateTime += Gdx.graphics.getDeltaTime();
+            parm.update(Gdx.graphics.getDeltaTime());
+            sprite.setPosition(parm.getPosition().x, parm.getPosition().y);
+        }
+
         TextureRegion currentFrame = playAttackAnimation ?
             attacking.getKeyFrame(stateTime, false) :
             attacking.getKeyFrames()[0];
 
-
         sprite.setRegion(currentFrame);
         sprite.setSize(x, y);
 
-        // TODO Under testing
-        if (playJumpAnimation) {
-            movement(Gdx.graphics.getDeltaTime());
-        }
-
         // Desenha o sprite
         sprite.draw(spriteBatch);
-    }
-
-    // TODO Under testing
-    public void movement(float dt) //I believe should you have this
-    {
-        float posx = (x + (velocity.x * dt));
-        float posy = (y + (velocity.y * dt));//set position every frame
-
-        sprite.setPosition(posx, posy); //?set sprite position (not sure)
-        velocity.set(velocity.x, velocity.y * dt * 2);//decrease vertical velocity every frame
     }
 
     public int getCoins() {
