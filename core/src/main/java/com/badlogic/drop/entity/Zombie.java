@@ -122,7 +122,7 @@ public class Zombie {
     }
 
     // Recebe as coordenadas finais do salto
-    public void jump(float x, float y) {
+    public void jump(float x) {
         Vector2 endPoint = new Vector2(x, y);
         Vector2 startPoint = new Vector2(sprite.getX(), sprite.getY());
 
