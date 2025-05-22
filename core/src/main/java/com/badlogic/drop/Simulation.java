@@ -47,7 +47,7 @@ public class Simulation {
         for (int i = 0; i < iterations; i++) {
             for (Zombie creature : creatures) {
                 // desloca a criatura proporcionalmente a quantidade de moedas e a largura do horizonte
-                creature.setPosition((creature.getPosition() + generateRandom() * creature.getCoins()) * factor);
+                creature.setTargetPosition((creature.getPosition() + generateRandom() * creature.getCoins()) * factor);
             }
         }
     }
@@ -91,7 +91,8 @@ public class Simulation {
         }
 
         Zombie creature = iterator.next();
-        creature.setPosition((creature.getPosition() + generateRandom() * creature.getCoins()) * factor);
+        creature.setTargetPosition((creature.getPosition() + generateRandom() * creature.getCoins()) * factor);
+        creature.reset();
 
         return creature;
     }

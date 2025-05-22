@@ -1,7 +1,6 @@
 package com.badlogic.drop.entity;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
@@ -10,11 +9,17 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Array;
 
 import java.util.Arrays;
 
 public class Zombie {
+
+    public enum ZombieState {
+        IDLE,
+        JUMPING,
+        ATTACKING,
+        FINISHED
+    }
 
     // Moedas e localização do zumbi
     private int coins;
@@ -33,11 +38,8 @@ public class Zombie {
     private static Animation<TextureRegion> beingHit;
     private static Animation<TextureRegion> dying;
 
+    private ZombieState currentState;
     private float stateTime = 0f;
-    private boolean playAttackAnimation = false;
-    private boolean playJumpAnimation = false;
-    private boolean playBeingHitAnimation = false;
-    private boolean playDyingAnimation = false;
 
     // audio
     private static Sound attackSound;
@@ -51,8 +53,8 @@ public class Zombie {
     // sprite com posição e tamanho
     private final Sprite sprite;
     private final Sprite coinSprite;
-    private float x;
-    private float y;
+    private final float x;
+    private final float y;
     private boolean flip = false;
 
     public Zombie() {
@@ -82,6 +84,8 @@ public class Zombie {
         // retângulos para colisão
         zombieRectangle = new Rectangle();
 
+        currentState = ZombieState.IDLE;
+
         // cria o movimento parabólico
         parm = new ParabolicMovement(
             new Vector2(sprite.getX(), sprite.getY()),
@@ -94,27 +98,36 @@ public class Zombie {
     }
 
     public void logic() {
-        // verifica se a tecla 'A' foi pressionada
-        if (Gdx.input.isKeyJustPressed(Input.Keys.A) && !playAttackAnimation) {
-            playAttackAnimation = true; // ativa a animação de ataque
-            stateTime = 0;              // reinicia o tempo da animação
-            attackSound.play();         // toca o som de ataque
-        }
+        stateTime += Gdx.graphics.getDeltaTime();
 
-        // reinicia a animação de ataque se ela já terminou
-        if (playAttackAnimation && attacking.isAnimationFinished(stateTime)) {
-            playAttackAnimation = false;
-        }
+        switch(currentState) {
+            case IDLE:
+                // transição para jumping
+                currentState = ZombieState.JUMPING;
+                stateTime = 0;
+                jump((float) targetPosition);
+                break;
 
-        // Para a animação de salto
-        if (playJumpAnimation && sprite.getY() == y) {
-            playJumpAnimation = false; // desativa a animação de pulo
-        }
+            case JUMPING:
+                // transição para attacking
+                if (sprite.getY() == y) {
+                    currentState = ZombieState.ATTACKING;
+                    stateTime = 0;
+                    attackSound.play();
+                }
+                break;
 
-        // verifica se a tecla 'SPACE' foi pressionada
-        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && !playJumpAnimation) {
-            playJumpAnimation = true; // ativa a animação de pulo
-            stateTime = 0;            // reinicia o tempo da animação
+            case ATTACKING:
+                // transição para finished
+                if (attacking.isAnimationFinished(stateTime)) {
+                    currentState = ZombieState.FINISHED;
+                    stateTime = 0;
+                }
+                break;
+
+            case FINISHED:
+
+                break;
         }
 
         // atualiza a posição da moeda
@@ -131,51 +144,62 @@ public class Zombie {
     }
 
     public void draw(SpriteBatch spriteBatch) {
-        // desenha a animação
-        if (playAttackAnimation) {
+        // atualiza stateTime
+        if (currentState != ZombieState.IDLE && currentState != ZombieState.FINISHED) {
             stateTime += Gdx.graphics.getDeltaTime();
         }
 
-        if (playJumpAnimation) {
-            stateTime += Gdx.graphics.getDeltaTime();
+        if (currentState == ZombieState.JUMPING) {
             parm.update(Gdx.graphics.getDeltaTime());
             sprite.setPosition(parm.getPosition().x, parm.getPosition().y);
         }
 
         TextureRegion currentFrame = getFrame();
-
         sprite.setRegion(currentFrame);
 
-        if (playJumpAnimation) {
-            // Decide a orientação do Sprite dependendo da direção do movimento
+        // Define a orientação do sprite
+        if (currentState == ZombieState.JUMPING) {
             flip = !(parm.getEndPoint().x > parm.getStartPoint().x);
         }
 
         sprite.setFlip(flip, false);
         sprite.setSize(350, 350);
 
-        // Desenha o sprite
+        // desenha zumbi e as moedas
         sprite.draw(spriteBatch);
         coinSprite.draw(spriteBatch);
     }
 
+    // redefine o estado do zumbi
+    public void reset() {
+        currentState = ZombieState.IDLE;
+        stateTime = 0f;
+        flip = false;
+        parm = new ParabolicMovement(
+            new Vector2(sprite.getX(), sprite.getY()),
+            new Vector2((float) targetPosition, y));
+    }
+
     public TextureRegion getFrame() {
-        if (playAttackAnimation) {
-            return attacking.getKeyFrame(stateTime, false);
-        } else if (playJumpAnimation) {
-            if (sprite.getY() < parm.getJumpHeight() - 1f &&
-                sprite.getX() < parm.getStartPoint().x + (parm.getDistanceX() * 0.4f)) {
+        switch(currentState) {
+            case ATTACKING:
+                return attacking.getKeyFrame(stateTime, false);
 
-                return jumpingUp.getKeyFrame(stateTime, false);
-            } else if (sprite.getY() < parm.getJumpHeight() - 1f &&
-                sprite.getX() >= parm.getStartPoint().x + (parm.getDistanceX() * 0.4f)) {
+            case JUMPING:
+                if (sprite.getY() < parm.getJumpHeight() - 1f &&
+                    sprite.getX() < parm.getStartPoint().x + (parm.getDistanceX() * 0.4f)) {
+                    return jumpingUp.getKeyFrame(stateTime, false);
+                } else if (sprite.getY() < parm.getJumpHeight() - 1f &&
+                    sprite.getX() >= parm.getStartPoint().x + (parm.getDistanceX() * 0.4f)) {
+                    return jumpingDown.getKeyFrame(stateTime, false);
+                } else {
+                    return landing.getKeyFrame(stateTime, false);
+                }
 
-                return jumpingDown.getKeyFrame(stateTime, false);
-            } else {
-                return landing.getKeyFrame(stateTime, false);
-            }
-        } else {
-            return attacking.getKeyFrames()[0];
+            case IDLE:
+            case FINISHED:
+            default:
+                return attacking.getKeyFrames()[0];
         }
     }
 
@@ -250,6 +274,10 @@ public class Zombie {
         this.position = position;
     }
 
+    public void setTargetPosition(double targetPosition) {
+        this.targetPosition = targetPosition;
+    }
+
     public Rectangle getZombieRectangle() {
         zombieRectangle.setPosition(sprite.getX() + 100f, sprite.getY() + 40f);
         zombieRectangle.setSize(sprite.getWidth() * 0.4f, sprite.getHeight() * 0.8f);
@@ -257,7 +285,7 @@ public class Zombie {
     }
 
     public boolean isProcessing() {
-        return playAttackAnimation || playJumpAnimation || playBeingHitAnimation || playDyingAnimation;
+        return currentState != ZombieState.FINISHED;
     }
 
     public Sprite getSprite() {

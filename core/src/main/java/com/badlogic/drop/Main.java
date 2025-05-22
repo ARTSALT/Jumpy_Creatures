@@ -241,7 +241,6 @@ public class Main extends ApplicationAdapter {
                     // inicializa a simulação com o número de zumbis
                     simulation = new Simulation(numZumbis, (int) gameViewport.getWorldWidth());
                     currentZombie = simulation.process();
-                    currentZombie.jump((float) currentZombie.getPosition());
                 } catch (Exception e) {
                     System.err.println("Erro na caixa de entrada: " + e.getMessage());
                 }
@@ -252,7 +251,6 @@ public class Main extends ApplicationAdapter {
         if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
             if (simulation != null && !currentZombie.isProcessing()) {
                 currentZombie = simulation.process();
-                currentZombie.jump((float) currentZombie.getPosition());
             }
         }
 
@@ -275,6 +273,11 @@ public class Main extends ApplicationAdapter {
                 // atualiza a câmera
                 ((OrthographicCamera) gameViewport.getCamera()).zoom = cameraZoom;
                 gameViewport.getCamera().update();
+            }
+
+            // processa o próximo zumbi
+            if (!currentZombie.isProcessing()) {
+                currentZombie = simulation.process();
             }
         }
     }
