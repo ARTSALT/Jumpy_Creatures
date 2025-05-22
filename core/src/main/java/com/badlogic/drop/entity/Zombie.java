@@ -4,7 +4,10 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.*;
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
@@ -14,93 +17,61 @@ public class Zombie {
 
     // Moedas e localização do zumbi
     private int coins;
-    private double location;
+    private double position;
 
     // spritesheet e texturas
-    Texture spriteSheet;
-    TextureRegion[][] keyframes;
-    TextureRegion[] attackingFrames;
-    TextureRegion[] jumpingFrames;
-    TextureRegion[] beingHitFrames;
-    TextureRegion[] dyingFrames;
+    private static Texture spriteSheet;
 
-    // animação do zumbi
-    Animation<TextureRegion> attacking;
-    Animation<TextureRegion> jumping;
-    float stateTime = 0f;
-    boolean playAttackAnimation = false;
-    boolean playJumpAnimation = false;
+    // animações do zumbi
+    private static Animation<TextureRegion> attacking;
+    private static Animation<TextureRegion> jumping;
+    private static Animation<TextureRegion> beingHit;
+    private static Animation<TextureRegion> dying;
+
+    private float stateTime = 0f;
+    private boolean playAttackAnimation = false;
+    private boolean playJumpAnimation = false;
+    private boolean playBeingHitAnimation = false;
+    private boolean playDyingAnimation = false;
 
     // audio
-    private Sound attackSound;
+    private static Sound attackSound;
 
     // retângulos para colisão entre zumbis
-    Rectangle zombieRectangle;
+    private Rectangle zombieRectangle;
 
-    ParabolicMovement parm;
+    // classe que gerencia o salto em um movimento parabólico
+    private ParabolicMovement parm;
 
-    Sprite sprite;
-    float x;
-    float y;
-
-    public Zombie(int coins, double location) {
-        this.coins = coins;
-        this.location = location;
-
-        // carrega o spritesheet completo
-        Texture spriteSheet = new Texture("zombie_spritesheet.png");
-
-        // separa o spritesheet em 4 keyframes de animação
-        TextureRegion[][] keyframes = TextureRegion.split(spriteSheet,
-            spriteSheet.getWidth() / 8, spriteSheet.getHeight() / 4);
-
-        // cada keyframe tem tamanho 8, mas a maioria das animações tem menos que 8 frames
-        TextureRegion[] attackingFrames = Arrays.copyOfRange(keyframes[0], 0, 4);   // 4 frames
-        TextureRegion[] jumpingFrames = Arrays.copyOfRange(keyframes[0], 0, 8);     // 8 frames
-        TextureRegion[] beingHitFrames = Arrays.copyOfRange(keyframes[0], 0, 3);    // 3 frames
-        TextureRegion[] dyingFrames = Arrays.copyOfRange(keyframes[0], 0, 5);       // 5 frames
-
-        sprite = new Sprite(spriteSheet);
-
-        attacking = new Animation<>(0.1f, attackingFrames);
-        jumping = new Animation<>(0.1f, jumpingFrames);
-
-        // retângulos para colisão
-        zombieRectangle = new Rectangle();
-    }
+    // sprite com posição e tamanho
+    private final Sprite sprite;
 
     public Zombie() {
-        this.coins = 1000000;
-        // this.location = location;
+        this(1000000, 0);
+    }
 
-        x = 100;
-        y = 100;
-
-        // carrega o spritesheet completo
-        spriteSheet = new Texture("zombie_spritesheet.png");
-
-        // separa o spritesheet em 4 keyframes de animação
-        keyframes = TextureRegion.split(spriteSheet,
-            spriteSheet.getWidth() / 8, spriteSheet.getHeight() / 4);
-
-        // cada keyframe tem tamanho 8, mas a maioria das animações tem menos que 8 frames
-        attackingFrames = Arrays.copyOfRange(keyframes[0], 0, 4);   // 4 frames
-        jumpingFrames = Arrays.copyOfRange(keyframes[0], 0, 8);     // 8 frames
-        beingHitFrames = Arrays.copyOfRange(keyframes[0], 0, 3);    // 3 frames
-        dyingFrames = Arrays.copyOfRange(keyframes[0], 0, 5);       // 5 frames
-
-        attacking = new Animation<>(0.1f, attackingFrames);
-        jumping = new Animation<>(0.1f, jumpingFrames);
-
-        // carrega o som de ataque
-        attackSound = Gdx.audio.newSound(Gdx.files.internal("zombie_attack.mp3"));
+    public Zombie(int coins, double position) {
+        this.coins = coins;
+        this.position = position;
 
         // retângulos para colisão
         zombieRectangle = new Rectangle();
 
-        sprite = new Sprite();
-        sprite.setPosition(x, y);
+        if (spriteSheet == null) {
+            throw new IllegalStateException("SpriteSheet não carregado. Use Zombie.loadResources() para carregar.");
+        }
 
+        // carrega o sprite a partir da textura
+        sprite = new Sprite(spriteSheet);
+
+        // define posição e tamanho do sprite
+        sprite.setBounds((float) position, Gdx.graphics.getHeight() / 9f,
+            350, 350);
+
+        // retângulos para colisão
+        zombieRectangle = new Rectangle();
+
+        // cria o movimento parabólico
         parm = new ParabolicMovement(
             new Vector2(sprite.getX(), sprite.getY()),
             new Vector2(sprite.getX() + 100, sprite.getY()),
@@ -120,11 +91,10 @@ public class Zombie {
         // reinicia a animação de ataque se ela já terminou
         if (playAttackAnimation && attacking.isAnimationFinished(stateTime)) {
             playAttackAnimation = false;
-            sprite.setY(y);
         }
 
         // Para a animação de salto
-        if (playJumpAnimation && sprite.getY() == (y + sprite.getHeight())) {
+        if (playJumpAnimation && sprite.getY() == (sprite.getY() + sprite.getHeight())) {
             playJumpAnimation = false; // desativa a animação de pulo
         }
 
@@ -166,6 +136,46 @@ public class Zombie {
         sprite.draw(spriteBatch);
     }
 
+    // métodos estáticos
+    public static void loadResources(String spritesheetPath, String audioPath) {
+        if (Zombie.spriteSheet != null) {
+            Zombie.spriteSheet.dispose();
+        }
+        Zombie.spriteSheet = new Texture(Gdx.files.internal(spritesheetPath));
+
+        // separa o spritesheet em 4 keyframes de animação
+        TextureRegion[][] keyframes = TextureRegion.split(spriteSheet,
+            spriteSheet.getWidth() / 8, spriteSheet.getHeight() / 4);
+
+        // cada keyframe tem tamanho 8, mas a maioria das animações tem menos que 8 frames
+        TextureRegion[] attackingFrames = Arrays.copyOfRange(keyframes[0], 0, 4);   // 4 frames
+        TextureRegion[] jumpingFrames = Arrays.copyOfRange(keyframes[0], 0, 8);     // 8 frames
+        TextureRegion[] beingHitFrames = Arrays.copyOfRange(keyframes[0], 0, 3);    // 3 frames
+        TextureRegion[] dyingFrames = Arrays.copyOfRange(keyframes[0], 0, 5);       // 5 frames
+
+        // cria as animações
+        attacking = new Animation<>(0.1f, attackingFrames);
+        jumping = new Animation<>(0.1f, jumpingFrames);
+        beingHit = new Animation<>(0.1f, beingHitFrames);
+        dying = new Animation<>(0.1f, dyingFrames);
+
+        // carrega o som de ataque
+        attackSound = Gdx.audio.newSound(Gdx.files.internal(audioPath));
+    }
+
+    public static void unloadResources() {
+        if (spriteSheet != null) {
+            spriteSheet.dispose();
+            spriteSheet = null;
+        }
+
+        if (attackSound != null) {
+            attackSound.dispose();
+            attackSound = null;
+        }
+    }
+
+    // getters e setters
     public int getCoins() {
         return coins;
     }
@@ -174,11 +184,11 @@ public class Zombie {
         this.coins = coins;
     }
 
-    public double getLocation() {
-        return location;
+    public double getPosition() {
+        return position;
     }
 
-    public void setLocation(double location) {
-        this.location = location;
+    public void setPosition(double position) {
+        this.position = position;
     }
 }

@@ -24,6 +24,13 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Main extends ApplicationAdapter {
+    // classe que gerencia a simulação
+    Simulation simulation;
+
+    // processa um zumbi por vez
+    Zombie currentZombie;
+
+    // renderizador de sprites e formas
     SpriteBatch spriteBatch;
     ShapeRenderer shapeRenderer;
 
@@ -44,8 +51,6 @@ public class Main extends ApplicationAdapter {
     // efeitos sonoros e música
     private Music music;
 
-    Zombie z;
-
     private float cameraZoom = 1.0f;
 
     // inicializa os recursos do jogo
@@ -53,8 +58,6 @@ public class Main extends ApplicationAdapter {
     public void create() {
         spriteBatch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-
-        z = new Zombie();
 
         // define a viewport do jogo e da interface
         gameViewport = new ExtendViewport(Gdx.graphics.getWidth() * 0.8f, Gdx.graphics.getHeight());
@@ -93,6 +96,9 @@ public class Main extends ApplicationAdapter {
         nameInput.setTextFieldFilter(digitsOnlyFilter);
 
         uiStage.addActor(nameInput);
+
+        // carrega recursos do zumbi
+        Zombie.loadResources("zombie_spritesheet.png", "zombie_attack.mp3");
     }
 
     @Override
@@ -161,6 +167,7 @@ public class Main extends ApplicationAdapter {
 
     // função de controle de entrada do usuário
     private void input() {
+        // verifica se a tecla ESC foi pressionada e fecha o jogo
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             Gdx.app.exit();
         }
@@ -183,15 +190,28 @@ public class Main extends ApplicationAdapter {
 
             Vector3 worldCoords = uiViewport.unproject(new Vector3(mouseX, mouseY, 0));
             if (playButtonBounds.contains(worldCoords.x, worldCoords.y)) {
+                int numZumbis = Integer.parseInt(nameInput.getText());
                 System.out.println("Botão clicado!");
-                System.out.println("Número de zumbis: " + nameInput.getText());
+                System.out.println("Número de zumbis: " + numZumbis);
+
+                // inicializa a simulação com o número de zumbis
+                simulation = new Simulation(numZumbis, (int) gameViewport.getWorldWidth());
+            }
+        }
+
+        if (Gdx.input.isKeyPressed(Input.Keys.P)) {
+            if (simulation != null) {
+                currentZombie = simulation.process();
             }
         }
     }
 
     // função de lógica do jogo
     private void logic() {
-        z.logic();
+        if (currentZombie != null) {
+            // atualiza a lógica do zumbi
+            currentZombie.logic();
+        }
     }
 
     // função de desenho, a ordem é importante
@@ -211,7 +231,10 @@ public class Main extends ApplicationAdapter {
             spriteBatch.draw(backgroundTexture, backgroundX, backgroundY);
         }
 
-        z.draw(spriteBatch);
+        if (currentZombie != null) {
+            // desenha o zumbi
+            currentZombie.draw(spriteBatch);
+        }
     }
 
     @Override
@@ -222,5 +245,6 @@ public class Main extends ApplicationAdapter {
         buttonsTexture.dispose();
         music.dispose();
         uiStage.dispose();
+        Zombie.unloadResources();
     }
 }
