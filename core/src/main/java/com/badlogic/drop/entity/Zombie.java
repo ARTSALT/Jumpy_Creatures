@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Array;
 
 import java.util.Arrays;
 
@@ -52,6 +53,7 @@ public class Zombie {
     private final Sprite coinSprite;
     private float x;
     private float y;
+    private boolean flip = false;
 
     public Zombie() {
         this(1000000, 0);
@@ -83,10 +85,7 @@ public class Zombie {
         // cria o movimento parabólico
         parm = new ParabolicMovement(
             new Vector2(sprite.getX(), sprite.getY()),
-            new Vector2(sprite.getX() + 100, sprite.getY()),
-            300,
-            500
-        );
+            new Vector2(sprite.getX() + 100, sprite.getY()));
 
         // define a posição e o tamanho do sprite da moeda
         coinSprite = new Sprite(coinTexture);
@@ -110,7 +109,6 @@ public class Zombie {
         // Para a animação de salto
         if (playJumpAnimation && sprite.getY() == y) {
             playJumpAnimation = false; // desativa a animação de pulo
-            jump(sprite.getX() - 100, sprite.getY());
         }
 
         // verifica se a tecla 'SPACE' foi pressionada
@@ -123,12 +121,13 @@ public class Zombie {
         coinSprite.setPosition(sprite.getX() + sprite.getWidth() / 2f - 50f, sprite.getY() + 60f);
     }
 
+    // Recebe as coordenadas finais do salto
     public void jump(float x, float y) {
         Vector2 endPoint = new Vector2(x, y);
         Vector2 startPoint = new Vector2(sprite.getX(), sprite.getY());
 
         // Cria uma nova instância de ParabolicMovement
-        parm = new ParabolicMovement(startPoint, endPoint, 200, 500);
+        parm = new ParabolicMovement(startPoint, endPoint);
     }
 
     public void draw(SpriteBatch spriteBatch) {
@@ -147,6 +146,12 @@ public class Zombie {
 
         sprite.setRegion(currentFrame);
 
+        if (playJumpAnimation) {
+            // Decide a orientação do Sprite dependendo da direção do movimento
+            flip = !(parm.getEndPoint().x > parm.getStartPoint().x);
+        }
+
+        sprite.setFlip(flip, false);
         sprite.setSize(350, 350);
 
         // Desenha o sprite

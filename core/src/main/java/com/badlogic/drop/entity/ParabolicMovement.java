@@ -7,20 +7,22 @@ public class ParabolicMovement {
     private Vector2 endPoint;   // Ponto final
     private Vector2 position;   // Posição atual do sprite
     private Vector2 velocity;   // Velocidade inicial
-    private float gravity;      // Gravidade
+    private final float gravity = 500f;      // Gravidade
     private float dt;           // Tempo acumulado
     private float jumpHeight;   // Altura do salto
 
-    public ParabolicMovement(Vector2 startPoint, Vector2 endPoint, float jumpHeight, float gravity) {
+    public ParabolicMovement(Vector2 startPoint, Vector2 endPoint) {
         this.startPoint = startPoint;
         this.endPoint = endPoint;
-        this.gravity = gravity;
         this.position = new Vector2(startPoint);
-        this.jumpHeight = jumpHeight;
+        this.jumpHeight = 300f;
         this.dt = 0;
 
         // Calcula a velocidade inicial
         float distanceX = endPoint.x - startPoint.x;
+
+        this.jumpHeight = Math.max(150f, Math.min(400f, distanceX * 0.3f));
+
         float timeToApex = (float) Math.sqrt((2 * jumpHeight) / gravity);
         float totalTime = timeToApex * 2;
         float velocityX = distanceX / totalTime;
@@ -51,6 +53,24 @@ public class ParabolicMovement {
                 System.out.println("Reached the end point: " + position.toString());
             }
         }
+    }
+
+    public void setMovement(Vector2 startPoint, Vector2 endPoint) {
+        this.startPoint = startPoint;
+        this.endPoint = endPoint;
+        this.position = new Vector2(startPoint);
+
+        // Calcula a distância percorrida
+        float distanceX = endPoint.x - startPoint.x;
+        this.jumpHeight = Math.max(150f, Math.min(400f, distanceX * 0.3f));
+
+        // Demora até chegar ao ápice do salto
+        float timeToApex = (float) Math.sqrt((2 * jumpHeight) / gravity);
+        float totalTime = timeToApex * 2;
+        float velocityX = distanceX / totalTime;
+        float velocityY = gravity * timeToApex;
+
+        this.velocity = new Vector2(velocityX, velocityY);
     }
 
     public Vector2 getPosition() {
