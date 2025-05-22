@@ -265,6 +265,15 @@ public class Main extends ApplicationAdapter {
         if (currentZombie != null) {
             // atualiza a lógica do zumbi atual
             currentZombie.logic();
+
+            // verifica se o zumbi passou das bordas da tela
+            if (isOutOfBounds(currentZombie)) {
+                cameraZoom *= 1.05f;    // zoom out
+
+                // atualiza a câmera
+                ((OrthographicCamera) gameViewport.getCamera()).zoom = cameraZoom;
+                gameViewport.getCamera().update();
+            }
         }
     }
 
@@ -321,6 +330,19 @@ public class Main extends ApplicationAdapter {
                 arrowTime = 0;
             }
         }
+    }
+
+    // Metodo auxiliar para verificar se um zumbi está fora dos limites
+    private boolean isOutOfBounds(Zombie zombie) {
+        Rectangle zombieRect = zombie.getZombieRectangle();
+        Rectangle viewportBounds = new Rectangle(
+            gameViewport.getCamera().position.x - (gameViewport.getWorldWidth() * cameraZoom) / 2,
+            gameViewport.getCamera().position.y - (gameViewport.getWorldHeight() * cameraZoom) / 2,
+            gameViewport.getWorldWidth() * cameraZoom,
+            gameViewport.getWorldHeight() * cameraZoom
+        );
+
+        return !viewportBounds.contains(zombieRect);
     }
 
     @Override

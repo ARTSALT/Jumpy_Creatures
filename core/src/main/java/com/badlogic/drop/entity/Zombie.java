@@ -10,7 +10,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Array;
 
 import java.util.Arrays;
 
@@ -19,6 +18,7 @@ public class Zombie {
     // Moedas e localização do zumbi
     private int coins;
     private double position;
+    private double targetPosition;
 
     // spritesheet e texturas
     private static Texture spriteSheet;
@@ -95,7 +95,6 @@ public class Zombie {
     }
 
     public void logic() {
-        System.out.println(Gdx.graphics.getDeltaTime());
         // verifica se a tecla 'A' foi pressionada
         if (Gdx.input.isKeyJustPressed(Input.Keys.A) && !playAttackAnimation) {
             playAttackAnimation = true; // ativa a animação de ataque
@@ -144,7 +143,7 @@ public class Zombie {
             sprite.setPosition(parm.getPosition().x, parm.getPosition().y);
         }
 
-        TextureRegion currentFrame = getSprite();
+        TextureRegion currentFrame = getFrame();
 
         sprite.setRegion(currentFrame);
 
@@ -169,7 +168,6 @@ public class Zombie {
 
                 return jumpingDown.getKeyFrame(stateTime, false);
             } else {
-                System.out.println();
                 return landing.getKeyFrame(stateTime, false);
             }
         } else {
