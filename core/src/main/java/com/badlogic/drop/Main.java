@@ -60,11 +60,13 @@ public class Main extends ApplicationAdapter {
         shapeRenderer = new ShapeRenderer();
 
         // define a viewport do jogo e da interface
-        gameViewport = new ExtendViewport(Gdx.graphics.getWidth() * 0.8f, Gdx.graphics.getHeight());
+        gameViewport = new ExtendViewport(Gdx.graphics.getWidth() * 0.8f, Gdx.graphics.getHeight(),
+            Integer.MAX_VALUE, Gdx.graphics.getHeight());
         uiViewport = new ScreenViewport();
 
         // carrega a textura do background
         backgroundTexture = new Texture("background.png");
+        backgroundTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
 
         // carrega a textura dos botões
         buttonsTexture = new Texture("buttons.png");
@@ -111,6 +113,22 @@ public class Main extends ApplicationAdapter {
         // posiciona a viewport da interface na direita
         uiViewport.setScreenX((int) gameWidth);
         uiViewport.setScreenY(0);
+
+        // aplica o zoom na câmera conforme a largura da viewport
+        if (gameViewport.getWorldWidth() > gameViewport.getWorldHeight()) {
+            cameraZoom = gameViewport.getWorldWidth() / gameViewport.getWorldHeight();
+        } else {
+            cameraZoom = gameViewport.getWorldHeight() / gameViewport.getWorldWidth();
+        }
+
+        // atualiza a câmera com o novo zoom
+        OrthographicCamera camera = (OrthographicCamera) gameViewport.getCamera();
+        camera.viewportWidth = gameViewport.getWorldWidth();
+        camera.viewportHeight = gameViewport.getWorldHeight();
+        camera.position.set(gameViewport.getWorldWidth() / 2f,
+            gameViewport.getWorldHeight() / 2f, 0);
+        camera.zoom = cameraZoom;
+        camera.update();
     }
 
     @Override
