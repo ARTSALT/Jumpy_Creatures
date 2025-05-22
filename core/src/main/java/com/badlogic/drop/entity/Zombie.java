@@ -135,6 +135,14 @@ public class Zombie {
         }
     }
 
+    public void jump(float x, float y) {
+        Vector2 endPoint = new Vector2(x, y);
+        Vector2 startPoint = new Vector2(sprite.getX(), sprite.getY());
+
+        // Cria uma nova instância de ParabolicMovement
+        parm = new ParabolicMovement(startPoint, endPoint, 200, 500);
+    }
+
     public void draw(SpriteBatch spriteBatch) {
         // desenha a animação
         if (playAttackAnimation) {
