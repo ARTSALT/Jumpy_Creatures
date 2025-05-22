@@ -8,6 +8,7 @@ import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -42,8 +43,13 @@ public class Main extends ApplicationAdapter {
     // texturas
     private Texture backgroundTexture;
     private Texture buttonsTexture;
+    private Texture arrowTexture;
     private TextureRegion playButton;
     private Rectangle playButtonBounds;
+
+    // animação da seta
+    private Animation<TextureRegion> arrowAnimation;
+    private float arrowTime;
 
     // interface do usuário
     private Stage uiStage;
@@ -77,6 +83,19 @@ public class Main extends ApplicationAdapter {
             uiViewport.getWorldWidth() / 2 - playButton.getRegionWidth() / 2f,
             uiViewport.getWorldHeight() / 2 - playButton.getRegionHeight() / 2f,
             playButton.getRegionWidth(), playButton.getRegionHeight());
+
+        // carrega a textura e animação da seta
+        arrowTexture = new Texture("arrow_sheet.png");
+        TextureRegion[][] arrowFrames = TextureRegion.split(
+            arrowTexture, arrowTexture.getWidth() / 5, arrowTexture.getHeight() / 4);
+        TextureRegion[] allFrames = new TextureRegion[5 * 4];
+        int index = 0;
+        for (int row = 0; row < 4; row++) {
+            for (int col = 0; col < 5; col++) {
+                allFrames[index++] = arrowFrames[row][col];
+            }
+        }
+        arrowAnimation = new Animation<>(0.1f, allFrames);
 
         // carrega áudio e música
         music = Gdx.audio.newMusic(Gdx.files.internal("graveyard_trap.mp3"));
@@ -229,7 +248,7 @@ public class Main extends ApplicationAdapter {
         }
 
         // processa o próximo zumbi
-        if (Gdx.input.isKeyPressed(Input.Keys.P)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
             if (simulation != null && !currentZombie.isProcessing()) {
                 currentZombie = simulation.process();
             }
@@ -290,6 +309,18 @@ public class Main extends ApplicationAdapter {
                 }
             }
         }
+
+        // desenha a seta sobre o zumbi atual
+        if (currentZombie != null) {
+            float arrowX = currentZombie.getSprite().getX() + currentZombie.getSprite().getWidth() / 2f - 50f;
+            float arrowY = currentZombie.getSprite().getY() + currentZombie.getSprite().getHeight() + 10f;
+            TextureRegion frame = arrowAnimation.getKeyFrame(arrowTime += Gdx.graphics.getDeltaTime(), true);
+            spriteBatch.draw(frame, arrowX, arrowY, 100, 100);
+
+            if (arrowTime > arrowAnimation.getAnimationDuration()) {
+                arrowTime = 0;
+            }
+        }
     }
 
     @Override
@@ -301,5 +332,6 @@ public class Main extends ApplicationAdapter {
         music.dispose();
         uiStage.dispose();
         Zombie.unloadResources();
+        arrowTexture.dispose();
     }
 }

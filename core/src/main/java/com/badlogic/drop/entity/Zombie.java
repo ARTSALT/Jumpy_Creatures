@@ -154,7 +154,7 @@ public class Zombie {
         coinSprite.draw(spriteBatch);
     }
 
-    public TextureRegion getSprite() {
+    public TextureRegion getFrame() {
         if (playAttackAnimation) {
             return attacking.getKeyFrame(stateTime, false);
         } else if (playJumpAnimation) {
@@ -239,5 +239,9 @@ public class Zombie {
 
     public boolean isProcessing() {
         return playAttackAnimation || playJumpAnimation || playBeingHitAnimation || playDyingAnimation;
+    }
+
+    public Sprite getSprite() {
+        return sprite;
     }
 }
