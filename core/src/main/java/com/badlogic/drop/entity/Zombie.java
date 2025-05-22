@@ -47,6 +47,8 @@ public class Zombie {
     // sprite com posição e tamanho
     private final Sprite sprite;
     private final Sprite coinSprite;
+    private float x;
+    private float y;
 
     public Zombie() {
         this(1000000, 0);
@@ -65,9 +67,11 @@ public class Zombie {
 
         // carrega o sprite a partir da textura
         sprite = new Sprite(spriteSheet);
+        x = (float) this.position;
+        y = Gdx.graphics.getHeight() / 9f;
 
         // define posição e tamanho do sprite
-        sprite.setBounds((float) position, Gdx.graphics.getHeight() / 9f,
+        sprite.setBounds(x, y,
             350, 350);
 
         // retângulos para colisão
@@ -88,6 +92,7 @@ public class Zombie {
     }
 
     public void logic() {
+        System.out.println(Gdx.graphics.getDeltaTime());
         // verifica se a tecla 'A' foi pressionada
         if (Gdx.input.isKeyJustPressed(Input.Keys.A) && !playAttackAnimation) {
             playAttackAnimation = true; // ativa a animação de ataque
@@ -101,12 +106,14 @@ public class Zombie {
         }
 
         // Para a animação de salto
-        if (playJumpAnimation && sprite.getY() == (sprite.getY() + sprite.getHeight())) {
+        if (playJumpAnimation && sprite.getY() == y) {
+            System.out.println("Jump finished");
             playJumpAnimation = false; // desativa a animação de pulo
+            jump(sprite.getX() - 100, sprite.getY());
         }
 
         // verifica se a tecla 'SPACE' foi pressionada
-        if (Gdx.input.isKeyPressed(Input.Keys.SPACE) && !playJumpAnimation) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && !playJumpAnimation) {
             playJumpAnimation = true; // ativa a animação de pulo
             stateTime = 0;            // reinicia o tempo da animação
         }
@@ -145,6 +152,16 @@ public class Zombie {
         // Desenha o sprite
         sprite.draw(spriteBatch);
         coinSprite.draw(spriteBatch);
+    }
+
+    public TextureRegion getSprite() {
+        if (playAttackAnimation) {
+            return attacking.getKeyFrame(stateTime, false);
+        } else if (playJumpAnimation) {
+            return jumping.getKeyFrame(stateTime, false);
+        } else {
+            return attacking.getKeyFrames()[0];
+        }
     }
 
     // métodos estáticos
