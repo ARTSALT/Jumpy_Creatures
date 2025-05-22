@@ -230,4 +230,14 @@ public class Zombie {
     public void setPosition(double position) {
         this.position = position;
     }
+
+    public Rectangle getZombieRectangle() {
+        zombieRectangle.setPosition(sprite.getX() + 100f, sprite.getY() + 40f);
+        zombieRectangle.setSize(sprite.getWidth() * 0.4f, sprite.getHeight() * 0.8f);
+        return zombieRectangle;
+    }
+
+    public boolean isProcessing() {
+        return playAttackAnimation || playJumpAnimation || playBeingHitAnimation || playDyingAnimation;
+    }
 }

@@ -29,6 +29,7 @@ public class Main extends ApplicationAdapter {
 
     // processa um zumbi por vez
     Zombie currentZombie;
+    boolean showCollider;
 
     // renderizador de sprites e formas
     SpriteBatch spriteBatch;
@@ -220,23 +221,30 @@ public class Main extends ApplicationAdapter {
 
                     // inicializa a simulação com o número de zumbis
                     simulation = new Simulation(numZumbis, (int) gameViewport.getWorldWidth());
+                    currentZombie = simulation.process();
                 } catch (Exception e) {
                     System.err.println("Erro na caixa de entrada: " + e.getMessage());
                 }
             }
         }
 
+        // processa o próximo zumbi
         if (Gdx.input.isKeyPressed(Input.Keys.P)) {
-            if (simulation != null) {
+            if (simulation != null && !currentZombie.isProcessing()) {
                 currentZombie = simulation.process();
             }
+        }
+
+        // mostra o retângulo de colisão
+        if (Gdx.input.isKeyJustPressed(Input.Keys.C)) {
+            showCollider = !showCollider;
         }
     }
 
     // função de lógica do jogo
     private void logic() {
         if (currentZombie != null) {
-            // atualiza a lógica do zumbi
+            // atualiza a lógica do zumbi atual
             currentZombie.logic();
         }
     }
@@ -258,9 +266,29 @@ public class Main extends ApplicationAdapter {
             spriteBatch.draw(backgroundTexture, backgroundX, backgroundY);
         }
 
-        if (currentZombie != null) {
-            // desenha o zumbi
-            currentZombie.draw(spriteBatch);
+        if (simulation != null) {
+            for (Zombie z : simulation.getCreatures()) {
+                z.draw(spriteBatch);
+
+                // desenha o zumbi
+                z.draw(spriteBatch);
+
+                // desenha o retângulo de colisão
+                if (showCollider) {
+                    spriteBatch.end();
+
+                    shapeRenderer.setProjectionMatrix(gameViewport.getCamera().combined);
+                    shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+                    shapeRenderer.setColor(Color.RED);
+                    shapeRenderer.rect(z.getZombieRectangle().x,
+                        z.getZombieRectangle().y,
+                        z.getZombieRectangle().width,
+                        z.getZombieRectangle().height);
+                    shapeRenderer.end();
+
+                    spriteBatch.begin();
+                }
+            }
         }
     }
 
