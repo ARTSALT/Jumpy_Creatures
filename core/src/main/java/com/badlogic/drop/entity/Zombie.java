@@ -152,7 +152,7 @@ public class Zombie {
             attacking.getKeyFrames()[0];
 
         sprite.setRegion(currentFrame);
-        sprite.setSize(x, y);
+        sprite.setSize(350, 350);
 
         // Desenha o sprite
         sprite.draw(spriteBatch);
