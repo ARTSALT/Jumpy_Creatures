@@ -6,10 +6,12 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -44,6 +46,8 @@ public class Main extends ApplicationAdapter {
 
     Zombie z;
 
+    private float cameraZoom = 1.0f;
+
     // inicializa os recursos do jogo
     @Override
     public void create() {
@@ -57,7 +61,7 @@ public class Main extends ApplicationAdapter {
         uiViewport = new ScreenViewport();
 
         // carrega a textura do background
-        backgroundTexture = new Texture("graveyard_background.png");
+        backgroundTexture = new Texture("background.png");
 
         // carrega a textura dos botões
         buttonsTexture = new Texture("buttons.png");
@@ -157,20 +161,27 @@ public class Main extends ApplicationAdapter {
 
     // função de controle de entrada do usuário
     private void input() {
-        // verifica se o usuário pressionou a tecla ESC para sair
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             Gdx.app.exit();
         }
 
+        // aplica o zoom na câmera com as setas
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+            cameraZoom += 0.01f;
+        } else if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+            cameraZoom -= 0.01f;
+        }
+
+        // atualiza a câmera com o novo zoom
+        ((OrthographicCamera) gameViewport.getCamera()).zoom = cameraZoom;
+        gameViewport.getCamera().update();
+
+        // verifica se o botão de play foi clicado
         if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-            // pega a posição do clique do mouse
             int mouseX = Gdx.input.getX();
             int mouseY = Gdx.input.getY();
 
-            // converte para coordenadas da viewport
             Vector3 worldCoords = uiViewport.unproject(new Vector3(mouseX, mouseY, 0));
-
-            // verifica se clicou no botão
             if (playButtonBounds.contains(worldCoords.x, worldCoords.y)) {
                 System.out.println("Botão clicado!");
                 System.out.println("Número de zumbis: " + nameInput.getText());
@@ -185,13 +196,21 @@ public class Main extends ApplicationAdapter {
 
     // função de desenho, a ordem é importante
     private void draw() {
-        float worldWidth = gameViewport.getWorldWidth();
-        float worldHeight = gameViewport.getWorldHeight();
+        OrthographicCamera camera = (OrthographicCamera) gameViewport.getCamera();
 
-        // desenha o background
-        spriteBatch.draw(backgroundTexture, 0, 0, worldWidth, worldHeight);
+        // calcula a posição do background
+        float visibleWidth = camera.viewportWidth * camera.zoom;
+        float backgroundY = camera.position.y - backgroundTexture.getHeight() / 2f;
+        float tileWidth = backgroundTexture.getWidth();
+        float centerTileX = MathUtils.floor(camera.position.x / tileWidth) * tileWidth;
+        int tilesToEachSide = (int)Math.ceil(visibleWidth / tileWidth) + 1;
 
-        //spriteBatch.draw(currentFrame, worldWidth/4, worldHeight/4, worldWidth/4, worldHeight/4);
+        // desenha o background continuamente conforme o zoom da câmera
+        for (int i = -tilesToEachSide; i <= tilesToEachSide; i++) {
+            float backgroundX = centerTileX + i * tileWidth;
+            spriteBatch.draw(backgroundTexture, backgroundX, backgroundY);
+        }
+
         z.draw(spriteBatch);
     }
 
