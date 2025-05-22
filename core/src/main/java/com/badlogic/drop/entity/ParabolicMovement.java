@@ -8,13 +8,15 @@ public class ParabolicMovement {
     private Vector2 position;   // Posição atual do sprite
     private Vector2 velocity;   // Velocidade inicial
     private float gravity;      // Gravidade
-    private float dt;         // Tempo acumulado
+    private float dt;           // Tempo acumulado
+    private float jumpHeight;   // Altura do salto
 
     public ParabolicMovement(Vector2 startPoint, Vector2 endPoint, float jumpHeight, float gravity) {
         this.startPoint = startPoint;
         this.endPoint = endPoint;
         this.gravity = gravity;
         this.position = new Vector2(startPoint);
+        this.jumpHeight = jumpHeight;
         this.dt = 0;
 
         // Calcula a velocidade inicial
@@ -53,5 +55,21 @@ public class ParabolicMovement {
 
     public Vector2 getPosition() {
         return position;
+    }
+
+    public float getJumpHeight() {
+        return jumpHeight;
+    }
+
+    public Vector2 getEndPoint() {
+        return endPoint;
+    }
+
+    public Vector2 getStartPoint() {
+        return startPoint;
+    }
+
+    public float getDistanceX() {
+        return endPoint.x - startPoint.x;
     }
 }

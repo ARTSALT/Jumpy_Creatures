@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Array;
 
 import java.util.Arrays;
 
@@ -25,7 +26,9 @@ public class Zombie {
 
     // animações do zumbi
     private static Animation<TextureRegion> attacking;
-    private static Animation<TextureRegion> jumping;
+    private static Animation<TextureRegion> jumpingUp;
+    private static Animation<TextureRegion> jumpingDown;
+    private static Animation<TextureRegion> landing;
     private static Animation<TextureRegion> beingHit;
     private static Animation<TextureRegion> dying;
 
@@ -81,7 +84,7 @@ public class Zombie {
         parm = new ParabolicMovement(
             new Vector2(sprite.getX(), sprite.getY()),
             new Vector2(sprite.getX() + 100, sprite.getY()),
-            200,
+            300,
             500
         );
 
@@ -107,7 +110,6 @@ public class Zombie {
 
         // Para a animação de salto
         if (playJumpAnimation && sprite.getY() == y) {
-            System.out.println("Jump finished");
             playJumpAnimation = false; // desativa a animação de pulo
             jump(sprite.getX() - 100, sprite.getY());
         }
@@ -142,11 +144,10 @@ public class Zombie {
             sprite.setPosition(parm.getPosition().x, parm.getPosition().y);
         }
 
-        TextureRegion currentFrame = playAttackAnimation ?
-            attacking.getKeyFrame(stateTime, false) :
-            attacking.getKeyFrames()[0];
+        TextureRegion currentFrame = getSprite();
 
         sprite.setRegion(currentFrame);
+
         sprite.setSize(350, 350);
 
         // Desenha o sprite
@@ -158,7 +159,19 @@ public class Zombie {
         if (playAttackAnimation) {
             return attacking.getKeyFrame(stateTime, false);
         } else if (playJumpAnimation) {
-            return jumping.getKeyFrame(stateTime, false);
+            // TODO problemas aqui
+            if (sprite.getY() <= parm.getJumpHeight() &&
+                sprite.getX() + sprite.getWidth() < (parm.getStartPoint().x + (parm.getDistanceX()*0.4f))) {
+
+                return jumpingUp.getKeyFrame(stateTime, false);
+            } else if (sprite.getY() <= parm.getJumpHeight() &&
+                sprite.getX() + sprite.getWidth() >= (parm.getStartPoint().x + (parm.getDistanceX()*0.4f))) {
+
+                return jumpingDown.getKeyFrame(stateTime, false);
+            } else {
+                System.out.println();
+                return landing.getKeyFrame(stateTime, false);
+            }
         } else {
             return attacking.getKeyFrames()[0];
         }
@@ -177,13 +190,17 @@ public class Zombie {
 
         // cada keyframe tem tamanho 8, mas a maioria das animações tem menos que 8 frames
         TextureRegion[] attackingFrames = Arrays.copyOfRange(keyframes[0], 0, 4);   // 4 frames
-        TextureRegion[] jumpingFrames = Arrays.copyOfRange(keyframes[0], 0, 8);     // 8 frames
-        TextureRegion[] beingHitFrames = Arrays.copyOfRange(keyframes[0], 0, 3);    // 3 frames
-        TextureRegion[] dyingFrames = Arrays.copyOfRange(keyframes[0], 0, 5);       // 5 frames
+        TextureRegion[] jumpingUpFrames = Arrays.copyOfRange(keyframes[1], 0, 4);   // 4 frames de subida
+        TextureRegion[] jumpingDownFrames = Arrays.copyOfRange(keyframes[1], 4, 5); // 1 frames de descida
+        TextureRegion[] landingFrames = Arrays.copyOfRange(keyframes[1], 5, 8);     // 3 frames de aterrissagem
+        TextureRegion[] beingHitFrames = Arrays.copyOfRange(keyframes[2], 0, 3);    // 3 frames
+        TextureRegion[] dyingFrames = Arrays.copyOfRange(keyframes[3], 0, 5);       // 5 frames
 
         // cria as animações
         attacking = new Animation<>(0.1f, attackingFrames);
-        jumping = new Animation<>(0.1f, jumpingFrames);
+        jumpingUp = new Animation<>(0.1f, jumpingUpFrames);
+        jumpingDown = new Animation<>(0.1f, jumpingDownFrames);
+        landing = new Animation<>(0.1f, landingFrames);
         beingHit = new Animation<>(0.1f, beingHitFrames);
         dying = new Animation<>(0.1f, dyingFrames);
 
