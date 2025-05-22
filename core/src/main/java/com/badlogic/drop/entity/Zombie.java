@@ -163,13 +163,12 @@ public class Zombie {
         if (playAttackAnimation) {
             return attacking.getKeyFrame(stateTime, false);
         } else if (playJumpAnimation) {
-            // TODO problemas aqui
-            if (sprite.getY() <= parm.getJumpHeight() &&
-                sprite.getX() + sprite.getWidth() < (parm.getStartPoint().x + (parm.getDistanceX()*0.4f))) {
+            if (sprite.getY() < parm.getJumpHeight() - 1f &&
+                sprite.getX() < parm.getStartPoint().x + (parm.getDistanceX() * 0.4f)) {
 
                 return jumpingUp.getKeyFrame(stateTime, false);
-            } else if (sprite.getY() <= parm.getJumpHeight() &&
-                sprite.getX() + sprite.getWidth() >= (parm.getStartPoint().x + (parm.getDistanceX()*0.4f))) {
+            } else if (sprite.getY() < parm.getJumpHeight() - 1f &&
+                sprite.getX() >= parm.getStartPoint().x + (parm.getDistanceX() * 0.4f)) {
 
                 return jumpingDown.getKeyFrame(stateTime, false);
             } else {

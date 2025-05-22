@@ -21,7 +21,7 @@ public class ParabolicMovement {
         // Calcula a velocidade inicial
         float distanceX = endPoint.x - startPoint.x;
 
-        this.jumpHeight = Math.max(150f, Math.min(400f, distanceX * 0.3f));
+        this.jumpHeight = Math.max(200f, Math.min(400f, distanceX * 2f));
 
         float timeToApex = (float) Math.sqrt((2 * jumpHeight) / gravity);
         float totalTime = timeToApex * 2;
