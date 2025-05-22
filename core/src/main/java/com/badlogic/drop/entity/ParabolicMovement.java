@@ -33,12 +33,21 @@ public class ParabolicMovement {
 
         // Atualiza a posição
         position.x = startPoint.x + velocity.x * dt;
-        position.y = startPoint.y + velocity.y * dt - 0.5f * gravity * dt * dt;
+        position.y = startPoint.y + (velocity.y * dt) - (0.5f * gravity * dt * dt);
 
         // Verifica se o sprite atingiu o ponto final
-        if (position.x >= endPoint.x) {
-            position.set(endPoint);
-            System.out.println("Reached the end point: " + position.toString());
+        if (endPoint.x > startPoint.x) {
+            // Se o sprite estiver se movendo para a direita
+            if (position.x >= endPoint.x) {
+                position.set(endPoint);
+                System.out.println("Reached the end point: " + position.toString());
+            }
+        } else {
+            // Se o sprite estiver se movendo para a esquerda
+            if (position.x <= endPoint.x) {
+                position.set(endPoint);
+                System.out.println("Reached the end point: " + position.toString());
+            }
         }
     }
 
