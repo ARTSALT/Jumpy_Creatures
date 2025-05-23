@@ -62,9 +62,11 @@ public class Simulation {
     private double generateRandom() { return random.nextDouble(-1, 1); }
 
     public void printResults() {
+        System.out.println("\n================================\n");
+        System.out.println("Iteração " + ++iterations);
         for (int i = 0; i < creatures.size(); i++) {
             Zombie creature = creatures.get(i);
-            System.out.println("Creature " + i + ": " + creature.getCoins() + " coins, position: " + creature.getPosition());
+            System.out.println("Zumbi " + i + ": " + creature.getCoins() + " moedas, horizonte: " + creature.getSprite().getX());
         }
     }
 
@@ -88,6 +90,7 @@ public class Simulation {
                 return null;
             }
             iterator = creatures.iterator();    // reinicia o iterador
+            printResults();                     // imprime os resultados da iteração
         }
 
         Zombie creature = iterator.next();

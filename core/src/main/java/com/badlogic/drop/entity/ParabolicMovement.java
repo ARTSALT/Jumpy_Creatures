@@ -44,13 +44,11 @@ public class ParabolicMovement {
             // Se o sprite estiver se movendo para a direita
             if (position.x >= endPoint.x) {
                 position.set(endPoint);
-                System.out.println("Reached the end point: " + position.toString());
             }
         } else {
             // Se o sprite estiver se movendo para a esquerda
             if (position.x <= endPoint.x) {
                 position.set(endPoint);
-                System.out.println("Reached the end point: " + position.toString());
             }
         }
     }

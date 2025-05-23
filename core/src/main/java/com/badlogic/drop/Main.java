@@ -257,7 +257,7 @@ public class Main extends ApplicationAdapter {
                 String input = nameInput.getText();
                 try {
                     int numZumbis = Integer.parseInt(input);
-                    System.out.println("Botão clicado!");
+                    System.out.println("Simulação iniciada");
                     System.out.println("Número de zumbis: " + numZumbis);
 
                     // inicializa a simulação com o número de zumbis
