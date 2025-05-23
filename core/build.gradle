@@ -1,0 +1,13 @@
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+eclipse.project.name = appName + '-core'
+
+dependencies {
+  api "com.badlogicgames.gdx:gdx:$gdxVersion"
+
+  if(enableGraalNative == 'true') {
+    implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
+  }
+
+  implementation 'org.junit.jupiter:junit-jupiter:5.11.1'
+  testImplementation("org.assertj:assertj-core:3.27.3")
+}
