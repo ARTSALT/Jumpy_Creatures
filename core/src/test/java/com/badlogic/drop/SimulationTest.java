@@ -2,6 +2,7 @@ package com.badlogic.drop;
 
 import com.badlogic.drop.entity.Zombie;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -11,6 +12,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.Arguments.of;
 
+@
 public class SimulationTest {
 
     @Test
