@@ -2,11 +2,9 @@ package com.badlogic.drop.entity;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
@@ -57,6 +55,12 @@ public class Zombie {
     private final float y;
     private boolean flip = false;
 
+    // sistema de texto
+    private static BitmapFont font;
+    private String statusText = null;
+    private Color statusColor = null;
+    private float statusTimer = 0f;
+
     public Zombie() {
         this(1000000, 0);
     }
@@ -102,14 +106,12 @@ public class Zombie {
 
         switch(currentState) {
             case IDLE:
-                // transição para jumping
                 currentState = ZombieState.JUMPING;
                 stateTime = 0;
                 jump((float) targetPosition);
                 break;
 
             case JUMPING:
-                // transição para attacking
                 if (sprite.getY() == y) {
                     currentState = ZombieState.ATTACKING;
                     stateTime = 0;
@@ -118,7 +120,6 @@ public class Zombie {
                 break;
 
             case ATTACKING:
-                // transição para finished
                 if (attacking.isAnimationFinished(stateTime)) {
                     currentState = ZombieState.FINISHED;
                     stateTime = 0;
@@ -126,7 +127,6 @@ public class Zombie {
                 break;
 
             case FINISHED:
-
                 break;
         }
 
@@ -134,21 +134,13 @@ public class Zombie {
         coinSprite.setPosition(sprite.getX() + sprite.getWidth() / 2f - 50f, sprite.getY() + 60f);
     }
 
-    // Recebe as coordenadas finais do salto
     public void jump(float x) {
         Vector2 endPoint = new Vector2(x, y);
         Vector2 startPoint = new Vector2(sprite.getX(), sprite.getY());
-
-        // Cria uma nova instância de ParabolicMovement
         parm = new ParabolicMovement(startPoint, endPoint);
     }
 
     public void draw(SpriteBatch spriteBatch) {
-        // atualiza stateTime
-        if (currentState != ZombieState.IDLE && currentState != ZombieState.FINISHED) {
-            stateTime += Gdx.graphics.getDeltaTime();
-        }
-
         if (currentState == ZombieState.JUMPING) {
             parm.update(Gdx.graphics.getDeltaTime());
             sprite.setPosition(parm.getPosition().x, parm.getPosition().y);
@@ -157,7 +149,6 @@ public class Zombie {
         TextureRegion currentFrame = getFrame();
         sprite.setRegion(currentFrame);
 
-        // Define a orientação do sprite
         if (currentState == ZombieState.JUMPING) {
             flip = !(parm.getEndPoint().x > parm.getStartPoint().x);
         }
@@ -165,12 +156,27 @@ public class Zombie {
         sprite.setFlip(flip, false);
         sprite.setSize(350, 350);
 
-        // desenha zumbi e as moedas
         sprite.draw(spriteBatch);
         coinSprite.draw(spriteBatch);
+
+        // atualiza o timer do texto
+        if (statusTimer > 0) {
+            statusTimer -= Gdx.graphics.getDeltaTime();
+            if (statusTimer <= 0) {
+                statusText = null;
+                statusColor = null;
+            }
+        }
+
+        // desenha o texto se existir
+        if (statusText != null && statusColor != null) {
+            font.setColor(statusColor);
+            font.draw(spriteBatch, statusText,
+                sprite.getX() + 30f,
+                sprite.getY() + sprite.getHeight());
+        }
     }
 
-    // redefine o estado do zumbi
     public void reset() {
         currentState = ZombieState.IDLE;
         stateTime = 0f;
@@ -203,14 +209,12 @@ public class Zombie {
         }
     }
 
-    // métodos estáticos
-    public static void loadResources(String spritesheetPath, String audioPath) {
+    public static void loadResources(String spritesheetPath, String audioPath, BitmapFont font) {
         if (Zombie.spriteSheet != null) {
             Zombie.spriteSheet.dispose();
         }
         Zombie.spriteSheet = new Texture(Gdx.files.internal(spritesheetPath));
 
-        // separa o spritesheet em 4 keyframes de animação
         TextureRegion[][] keyframes = TextureRegion.split(spriteSheet,
             spriteSheet.getWidth() / 8, spriteSheet.getHeight() / 4);
 
@@ -222,22 +226,21 @@ public class Zombie {
         TextureRegion[] beingHitFrames = Arrays.copyOfRange(keyframes[2], 0, 3);    // 3 frames
         TextureRegion[] dyingFrames = Arrays.copyOfRange(keyframes[3], 0, 5);       // 5 frames
 
-        // cria as animações
-        attacking = new Animation<>(0.1f, attackingFrames);
+        attacking = new Animation<>(0.15f, attackingFrames);
         jumpingUp = new Animation<>(0.1f, jumpingUpFrames);
         jumpingDown = new Animation<>(0.1f, jumpingDownFrames);
         landing = new Animation<>(0.1f, landingFrames);
         beingHit = new Animation<>(0.1f, beingHitFrames);
         dying = new Animation<>(0.1f, dyingFrames);
 
-        // carrega o som de ataque
         attackSound = Gdx.audio.newSound(Gdx.files.internal(audioPath));
 
-        // carrega a textura da moeda
         if (coinTexture != null) {
             coinTexture.dispose();
         }
         coinTexture = new Texture(Gdx.files.internal("coin.png"));
+
+        Zombie.font = font;
     }
 
     public static void unloadResources() {
@@ -254,6 +257,11 @@ public class Zombie {
         if (coinTexture != null) {
             coinTexture.dispose();
             coinTexture = null;
+        }
+
+        if (font != null) {
+            font.dispose();
+            font = null;
         }
     }
 
@@ -284,11 +292,36 @@ public class Zombie {
         return zombieRectangle;
     }
 
-    public boolean isProcessing() {
-        return currentState != ZombieState.FINISHED;
+    public boolean finishedProcessing() {
+        return currentState == ZombieState.FINISHED;
     }
 
     public Sprite getSprite() {
         return sprite;
+    }
+
+    // rouba metade das moedas de outro zumbi
+    public void steal(Zombie closestZombie) {
+        int halfCoins = closestZombie.halveCoins();
+        coins += halfCoins;
+
+        // configura texto de ganho para este zumbi
+        setStatusText("+" + halfCoins, Color.GREEN);
+
+        // configura texto de perda para o zumbi roubado
+        closestZombie.setStatusText("-" + halfCoins, Color.RED);
+    }
+
+    // perde metade das moedas
+    private int halveCoins() {
+        int half = coins / 2;
+        coins -= half;
+        return half;
+    }
+
+    private void setStatusText(String text, Color color) {
+        this.statusText = text;
+        this.statusColor = color;
+        this.statusTimer = 3f; // 3 segundos de exibição
     }
 }

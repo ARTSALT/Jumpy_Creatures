@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -30,6 +31,7 @@ public class Main extends ApplicationAdapter {
 
     // processa um zumbi por vez
     Zombie currentZombie;
+    Zombie selectedZombie;
     boolean showCollider;
 
     // renderizador de sprites e formas
@@ -54,6 +56,7 @@ public class Main extends ApplicationAdapter {
     // interface do usuário
     private Stage uiStage;
     private TextField nameInput;
+    private BitmapFont font;
 
     // efeitos sonoros e música
     private Music music;
@@ -119,8 +122,10 @@ public class Main extends ApplicationAdapter {
 
         uiStage.addActor(nameInput);
 
+        font = skin.getFont("title");
+
         // carrega recursos do zumbi
-        Zombie.loadResources("zombie_spritesheet.png", "zombie_attack.mp3");
+        Zombie.loadResources("zombie_spritesheet.png", "zombie_attack.mp3", skin.getFont("title"));
     }
 
     @Override
@@ -224,12 +229,29 @@ public class Main extends ApplicationAdapter {
         // processa a entrada com ENTER
         boolean enterPressed = Gdx.input.isKeyJustPressed(Input.Keys.ENTER);
 
-        // verifica se o botão de play foi clicado ou se a tecla ENTER foi pressionada
-        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) || enterPressed) {
+        // captura clique do mouse
+        boolean mouseClick = Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
+
+        // verifica se o mouse pressionou sobre algum zumbi
+        if (mouseClick && simulation != null) {
             int mouseX = Gdx.input.getX();
             int mouseY = Gdx.input.getY();
+            Vector3 worldCoords = gameViewport.unproject(new Vector3(mouseX, mouseY, 0));
 
+            for (Zombie z : simulation.getCreatures()) {
+                if (z.getZombieRectangle().contains(worldCoords.x, worldCoords.y)) {
+                    selectedZombie = z;
+                    break;
+                }
+            }
+        }
+
+        // verifica se o botão de play foi clicado ou se a tecla ENTER foi pressionada
+        if (mouseClick || enterPressed) {
+            int mouseX = Gdx.input.getX();
+            int mouseY = Gdx.input.getY();
             Vector3 worldCoords = uiViewport.unproject(new Vector3(mouseX, mouseY, 0));
+
             if (playButtonBounds.contains(worldCoords.x, worldCoords.y)
                 || enterPressed) {
                 String input = nameInput.getText();
@@ -249,7 +271,7 @@ public class Main extends ApplicationAdapter {
 
         // processa o próximo zumbi
         if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
-            if (simulation != null && !currentZombie.isProcessing()) {
+            if (simulation != null && currentZombie.finishedProcessing()) {
                 currentZombie = simulation.process();
             }
         }
@@ -276,10 +298,34 @@ public class Main extends ApplicationAdapter {
             }
 
             // processa o próximo zumbi
-            if (!currentZombie.isProcessing()) {
+            if (currentZombie.finishedProcessing()) {
+                // encontra o zumbi mais próximo
+                Zombie closestZombie = getClosestZombie();
+
+                if (closestZombie != null) {
+                    currentZombie.steal(closestZombie);
+                }
+
                 currentZombie = simulation.process();
             }
         }
+    }
+
+    private Zombie getClosestZombie() {
+        Zombie closestZombie = null;
+        double minDist = Double.MAX_VALUE;
+
+        for (Zombie z : simulation.getCreatures()) {
+            if (z == currentZombie) continue;
+
+            double dist = Math.abs(z.getSprite().getX() - currentZombie.getSprite().getX());
+            if (dist < minDist) {
+                minDist = dist;
+                closestZombie = z;
+            }
+        }
+
+        return closestZombie;
     }
 
     // função de desenho, a ordem é importante
@@ -305,23 +351,32 @@ public class Main extends ApplicationAdapter {
 
                 // desenha o zumbi
                 z.draw(spriteBatch);
-
-                // desenha o retângulo de colisão
-                if (showCollider) {
-                    spriteBatch.end();
-
-                    shapeRenderer.setProjectionMatrix(gameViewport.getCamera().combined);
-                    shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-                    shapeRenderer.setColor(Color.RED);
-                    shapeRenderer.rect(z.getZombieRectangle().x,
-                        z.getZombieRectangle().y,
-                        z.getZombieRectangle().width,
-                        z.getZombieRectangle().height);
-                    shapeRenderer.end();
-
-                    spriteBatch.begin();
-                }
             }
+        }
+
+        // desenha o retângulo de colisão
+        if (selectedZombie != null) {
+            font.setColor(Color.WHITE);
+            font.draw(spriteBatch,
+                "Moedas do zumbi selecionado: " + String.format("%,d", selectedZombie.getCoins()),
+                0f, gameViewport.getWorldHeight() - 20f);
+            spriteBatch.end();
+
+            shapeRenderer.setProjectionMatrix(gameViewport.getCamera().combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+            shapeRenderer.setColor(Color.RED);
+            shapeRenderer.rect(selectedZombie.getZombieRectangle().x,
+                selectedZombie.getZombieRectangle().y,
+                selectedZombie.getZombieRectangle().width,
+                selectedZombie.getZombieRectangle().height);
+            shapeRenderer.end();
+
+            spriteBatch.begin();
+        } else {
+            font.setColor(Color.WHITE);
+            font.draw(spriteBatch,
+                "Selecione um zumbi com o mouse",
+                0f, 0f);
         }
 
         // desenha a seta sobre o zumbi atual
@@ -360,5 +415,6 @@ public class Main extends ApplicationAdapter {
         uiStage.dispose();
         Zombie.unloadResources();
         arrowTexture.dispose();
+        font.dispose();
     }
 }
