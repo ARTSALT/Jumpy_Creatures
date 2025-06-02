@@ -10,8 +10,18 @@ buildscript {
   }
   dependencies {
 
-
   }
+}
+
+apply plugin: 'java'
+
+dependencies {
+  testImplementation "junit:junit:5.8.1"
+  testImplementation "com.badlogicgames.gdx:gdx-backend-headless:$gdxVersion"
+  testImplementation "com.badlogicgames.gdx:gdx:$gdxVersion"
+  testImplementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+  testImplementation "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+  testImplementation "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
 }
 
 allprojects {
@@ -30,6 +40,9 @@ allprojects {
 configure(subprojects) {
   apply plugin: 'java-library'
   sourceCompatibility = 11
+
+  sourceSets.main.java.srcDirs = [ "src/main/java/" ]
+  sourceSets.test.java.srcDirs = [ "src/test/java/" ]
 
   // From https://lyze.dev/2021/04/29/libGDX-Internal-Assets-List/
   // The article can be helpful when using assets.txt in your project.
