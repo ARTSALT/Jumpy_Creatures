@@ -1,3 +1,9 @@
+### H2 Database ###
+*.mv.db
+*.trace.db
+/data/
+
+### Java ###
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

@@ -1,4 +1,4 @@
-package com.softwaretesting.entity;
+package com.softwaretesting.simulation.entity;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Sound;
@@ -238,7 +238,7 @@ public class Zombie {
         if (coinTexture != null) {
             coinTexture.dispose();
         }
-        coinTexture = new Texture(Gdx.files.internal("coin.png"));
+        coinTexture = new Texture(Gdx.files.internal("images/coin.png"));
 
         Zombie.font = font;
     }

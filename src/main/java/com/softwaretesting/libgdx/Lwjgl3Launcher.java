@@ -1,18 +1,17 @@
 package com.softwaretesting.libgdx;
 
-import com.softwaretesting.Main;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {
-    public static void main(String[] args) {
+    public static void launch() {
         if (StartupHelper.startNewJvmIfRequired()) return; // This handles macOS support and helps on Windows.
         createApplication();
     }
 
     private static void createApplication() {
-        new Lwjgl3Application(new Main(), getDefaultConfiguration());
+        new Lwjgl3Application(new LibGdxApplication(), getDefaultConfiguration());
     }
 
     private static Lwjgl3ApplicationConfiguration getDefaultConfiguration() {
@@ -21,7 +20,7 @@ public class Lwjgl3Launcher {
         configuration.useVsync(true);
         configuration.setForegroundFPS(Lwjgl3ApplicationConfiguration.getDisplayMode().refreshRate + 1);
         configuration.setWindowedMode(1280, 720);
-        configuration.setWindowIcon("libgdx128.png", "libgdx64.png", "libgdx32.png", "libgdx16.png");
+        configuration.setWindowIcon("images/libgdx128.png", "images/libgdx64.png", "images/libgdx32.png", "images/libgdx16.png");
         configuration.setDecorated(true);
 
         return configuration;

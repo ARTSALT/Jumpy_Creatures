@@ -1,6 +1,6 @@
-package com.softwaretesting;
+package com.softwaretesting.simulation;
 
-import com.softwaretesting.entity.Zombie;
+import com.softwaretesting.simulation.entity.Zombie;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -17,11 +17,11 @@ public class Simulation {
 
     /**
      * Cria uma nova simulação com o número de criaturas e a largura do horizonte especificados.
-     * @param numCreatures número de criaturas
+     * @param numZombies número de criaturas
      * @param horizonWidth largura do horizonte
      */
-    public Simulation(int numCreatures, int horizonWidth) {
-        if (numCreatures <= 0) {
+    public Simulation(int numZombies, int horizonWidth) {
+        if (numZombies <= 0) {
             throw new IllegalArgumentException("O número de criaturas não pode ser negativo ou zero.");
         }
 
@@ -31,10 +31,10 @@ public class Simulation {
 
         this.horizonWidth = horizonWidth;
         this.factor = horizonWidth / 1000000.0;
-        this.creatures = new ArrayList<>(numCreatures);
+        this.creatures = new ArrayList<>(numZombies);
 
-        // gera 'numCreatures' criaturas
-        for (int i = 0; i < numCreatures; i++) {
+        // gera 'numZombies' criaturas
+        for (int i = 0; i < numZombies; i++) {
             // cria uma nova criatura com 1000000 moedas e posição inicial na metade da largura do horizonte
             creatures.add(new Zombie(1000000, horizonWidth / 2f));
         }
@@ -79,7 +79,7 @@ public class Simulation {
         return horizonWidth;
     }
 
-    public List<Zombie> getCreatures() {
+    public List<Zombie> getZombies() {
         return creatures;
     }
 

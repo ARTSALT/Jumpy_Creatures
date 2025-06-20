@@ -1,4 +1,4 @@
-package com.softwaretesting.entity;
+package com.softwaretesting.simulation.entity;
 
 import com.badlogic.gdx.math.Vector2;
 
