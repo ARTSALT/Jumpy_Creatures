@@ -1,4 +1,4 @@
-package com.softwaretesting.simulation.entity;
+package com.softwaretesting.libgdx;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Sound;
@@ -7,6 +7,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.softwaretesting.simulation.entity.Creature;
+import com.softwaretesting.simulation.entity.ParabolicMovement;
 
 import java.util.Arrays;
 
@@ -19,10 +21,8 @@ public class Zombie {
         FINISHED
     }
 
-    // Moedas e localização do zumbi
-    private int coins;
-    private double position;
-    private double targetPosition;
+    // referência à criatura associada a este zumbi
+    private final Creature creature;
 
     // spritesheet e texturas
     private static Texture spriteSheet;
@@ -43,7 +43,7 @@ public class Zombie {
     private static Sound attackSound;
 
     // retângulos para colisão entre zumbis
-    private Rectangle zombieRectangle;
+    private final Rectangle zombieRectangle;
 
     // classe que gerencia o salto em um movimento parabólico
     private ParabolicMovement parm;
@@ -51,7 +51,6 @@ public class Zombie {
     // sprite com posição e tamanho
     private final Sprite sprite;
     private final Sprite coinSprite;
-    private final float x;
     private final float y;
     private boolean flip = false;
 
@@ -61,46 +60,42 @@ public class Zombie {
     private Color statusColor = null;
     private float statusTimer = 0f;
 
-    public Zombie() {
-        this(1000000, 0);
-    }
-
-    public Zombie(int coins, double position) {
-        this.coins = coins;
-        this.position = position;
-
-        // retângulos para colisão
-        zombieRectangle = new Rectangle();
+    /**
+     * Cria um novo zumbi associado a uma criatura.
+     * A posição inicial do sprite é baseada na posição da criatura.
+     *
+     * @param creature A criatura associada a este zumbi.
+     */
+    public Zombie(Creature creature) {
+        this.creature = creature;
 
         if (spriteSheet == null) {
             throw new IllegalStateException("SpriteSheet não carregado. Use Zombie.loadResources() para carregar.");
         }
 
-        // carrega o sprite a partir da textura
+        // posição inicial do sprite é baseada na posição da criatura
+        float initialX = (float) this.creature.getPosition();
+        this.y = Gdx.graphics.getHeight() / 9f;
+
         sprite = new Sprite(spriteSheet);
-        x = (float) this.position;
-        y = Gdx.graphics.getHeight() / 9f;
+        sprite.setBounds(initialX, y, 350, 350);
 
-        // define posição e tamanho do sprite
-        sprite.setBounds(x, y,
-            350, 350);
-
-        // retângulos para colisão
         zombieRectangle = new Rectangle();
-
         currentState = ZombieState.IDLE;
 
-        // cria o movimento parabólico
         parm = new ParabolicMovement(
             new Vector2(sprite.getX(), sprite.getY()),
-            new Vector2(sprite.getX() + 100, sprite.getY()));
+            new Vector2(sprite.getX(), sprite.getY())
+        );
 
-        // define a posição e o tamanho do sprite da moeda
         coinSprite = new Sprite(coinTexture);
-        coinSprite.setBounds(sprite.getX() + sprite.getWidth() / 2f - 50f, sprite.getY() + 60f,
-            50, 60);
+        coinSprite.setBounds(sprite.getX() + sprite.getWidth() / 2f - 50f, sprite.getY() + 60f, 50, 60);
     }
 
+    /**
+     * Lógica do zumbi, atualiza o estado e a posição do sprite.
+     * Deve ser chamado a cada frame.
+     */
     public void logic() {
         stateTime += Gdx.graphics.getDeltaTime();
 
@@ -108,38 +103,42 @@ public class Zombie {
             case IDLE:
                 currentState = ZombieState.JUMPING;
                 stateTime = 0;
-                jump((float) targetPosition);
+                jump((float) creature.getTargetPosition());
                 break;
 
             case JUMPING:
                 if (sprite.getY() == y) {
+                    creature.updatePosition();
                     currentState = ZombieState.ATTACKING;
                     stateTime = 0;
                     attackSound.play();
                 }
                 break;
-
             case ATTACKING:
                 if (attacking.isAnimationFinished(stateTime)) {
                     currentState = ZombieState.FINISHED;
                     stateTime = 0;
                 }
                 break;
-
             case FINISHED:
                 break;
         }
 
-        // atualiza a posição da moeda
         coinSprite.setPosition(sprite.getX() + sprite.getWidth() / 2f - 50f, sprite.getY() + 60f);
     }
 
-    public void jump(float x) {
-        Vector2 endPoint = new Vector2(x, y);
+    /**
+     * Inicia o salto do zumbi para uma posição alvo.
+     */
+    public void jump(float targetX) {
         Vector2 startPoint = new Vector2(sprite.getX(), sprite.getY());
+        Vector2 endPoint = new Vector2(targetX, y);
         parm = new ParabolicMovement(startPoint, endPoint);
     }
 
+    /**
+     * Desenha o estado atual do zumbi na tela, a cada frame.
+     */
     public void draw(SpriteBatch spriteBatch) {
         if (currentState == ZombieState.JUMPING) {
             parm.update(Gdx.graphics.getDeltaTime());
@@ -155,13 +154,13 @@ public class Zombie {
 
         sprite.setFlip(flip, false);
         sprite.setSize(350, 350);
-
         sprite.draw(spriteBatch);
         coinSprite.draw(spriteBatch);
 
         // atualiza o timer do texto
         if (statusTimer > 0) {
             statusTimer -= Gdx.graphics.getDeltaTime();
+
             if (statusTimer <= 0) {
                 statusText = null;
                 statusColor = null;
@@ -181,9 +180,7 @@ public class Zombie {
         currentState = ZombieState.IDLE;
         stateTime = 0f;
         flip = false;
-        parm = new ParabolicMovement(
-            new Vector2(sprite.getX(), sprite.getY()),
-            new Vector2((float) targetPosition, y));
+        sprite.setX((float) creature.getPosition());
     }
 
     public TextureRegion getFrame() {
@@ -209,22 +206,62 @@ public class Zombie {
         }
     }
 
+    public Creature getCreature() {
+        return this.creature;
+    }
+
+    public void steal(Zombie otherZombie) {
+        int stolenCoins = this.creature.stealFrom(otherZombie.getCreature());
+
+        this.setStatusText("+" + stolenCoins, Color.GREEN);
+        otherZombie.setStatusText("-" + stolenCoins, Color.RED);
+    }
+
+    public int getCoins() {
+        return creature.getCoins();
+    }
+
+    public double getPosition() {
+        return creature.getPosition();
+    }
+
+    public Sprite getSprite() {
+        return sprite;
+    }
+
+    public Rectangle getZombieRectangle() {
+        zombieRectangle.setPosition(sprite.getX() + 100f, sprite.getY() + 40f);
+        zombieRectangle.setSize(sprite.getWidth() * 0.4f, sprite.getHeight() * 0.8f);
+        return zombieRectangle;
+    }
+
+    public boolean finishedProcessing() {
+        return currentState == ZombieState.FINISHED;
+    }
+
+    private void setStatusText(String text, Color color) {
+        this.statusText = text;
+        this.statusColor = color;
+        this.statusTimer = 3f; // 3 segundos de exibição
+    }
+
     public static void loadResources(String spritesheetPath, String audioPath, BitmapFont font) {
         if (Zombie.spriteSheet != null) {
             Zombie.spriteSheet.dispose();
         }
+
         Zombie.spriteSheet = new Texture(Gdx.files.internal(spritesheetPath));
 
         TextureRegion[][] keyframes = TextureRegion.split(spriteSheet,
             spriteSheet.getWidth() / 8, spriteSheet.getHeight() / 4);
 
         // cada keyframe tem tamanho 8, mas a maioria das animações tem menos que 8 frames
-        TextureRegion[] attackingFrames = Arrays.copyOfRange(keyframes[0], 0, 4);   // 4 frames
-        TextureRegion[] jumpingUpFrames = Arrays.copyOfRange(keyframes[1], 0, 4);   // 4 frames de subida
+        TextureRegion[] attackingFrames = Arrays.copyOfRange(keyframes[0], 0, 4); // 4 frames
+        TextureRegion[] jumpingUpFrames = Arrays.copyOfRange(keyframes[1], 0, 4); // 4 frames de subida
         TextureRegion[] jumpingDownFrames = Arrays.copyOfRange(keyframes[1], 4, 5); // 1 frames de descida
-        TextureRegion[] landingFrames = Arrays.copyOfRange(keyframes[1], 5, 8);     // 3 frames de aterrissagem
-        TextureRegion[] beingHitFrames = Arrays.copyOfRange(keyframes[2], 0, 3);    // 3 frames
-        TextureRegion[] dyingFrames = Arrays.copyOfRange(keyframes[3], 0, 5);       // 5 frames
+        TextureRegion[] landingFrames = Arrays.copyOfRange(keyframes[1], 5, 8); // 3 frames de aterrissagem
+        TextureRegion[] beingHitFrames = Arrays.copyOfRange(keyframes[2], 0, 3); // 3 frames
+        TextureRegion[] dyingFrames = Arrays.copyOfRange(keyframes[3], 0, 5); // 5 frames
 
         attacking = new Animation<>(0.15f, attackingFrames);
         jumpingUp = new Animation<>(0.1f, jumpingUpFrames);
@@ -232,14 +269,13 @@ public class Zombie {
         landing = new Animation<>(0.1f, landingFrames);
         beingHit = new Animation<>(0.1f, beingHitFrames);
         dying = new Animation<>(0.1f, dyingFrames);
-
         attackSound = Gdx.audio.newSound(Gdx.files.internal(audioPath));
 
         if (coinTexture != null) {
             coinTexture.dispose();
         }
-        coinTexture = new Texture(Gdx.files.internal("images/coin.png"));
 
+        coinTexture = new Texture(Gdx.files.internal("images/coin.png"));
         Zombie.font = font;
     }
 
@@ -263,65 +299,5 @@ public class Zombie {
             font.dispose();
             font = null;
         }
-    }
-
-    // getters e setters
-    public int getCoins() {
-        return coins;
-    }
-
-    public void setCoins(int coins) {
-        this.coins = coins;
-    }
-
-    public double getPosition() {
-        return position;
-    }
-
-    public void setPosition(double position) {
-        this.position = position;
-    }
-
-    public void setTargetPosition(double targetPosition) {
-        this.targetPosition = targetPosition;
-    }
-
-    public Rectangle getZombieRectangle() {
-        zombieRectangle.setPosition(sprite.getX() + 100f, sprite.getY() + 40f);
-        zombieRectangle.setSize(sprite.getWidth() * 0.4f, sprite.getHeight() * 0.8f);
-        return zombieRectangle;
-    }
-
-    public boolean finishedProcessing() {
-        return currentState == ZombieState.FINISHED;
-    }
-
-    public Sprite getSprite() {
-        return sprite;
-    }
-
-    // rouba metade das moedas de outro zumbi
-    public void steal(Zombie closestZombie) {
-        int halfCoins = closestZombie.halveCoins();
-        coins += halfCoins;
-
-        // configura texto de ganho para este zumbi
-        setStatusText("+" + halfCoins, Color.GREEN);
-
-        // configura texto de perda para o zumbi roubado
-        closestZombie.setStatusText("-" + halfCoins, Color.RED);
-    }
-
-    // perde metade das moedas
-    private int halveCoins() {
-        int half = coins / 2;
-        coins -= half;
-        return half;
-    }
-
-    private void setStatusText(String text, Color color) {
-        this.statusText = text;
-        this.statusColor = color;
-        this.statusTimer = 3f; // 3 segundos de exibição
     }
 }

@@ -23,7 +23,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.softwaretesting.simulation.Simulation;
-import com.softwaretesting.simulation.entity.Zombie;
+import com.softwaretesting.simulation.entity.Creature;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class LibGdxApplication extends ApplicationAdapter {
@@ -240,9 +240,12 @@ public class LibGdxApplication extends ApplicationAdapter {
             int mouseY = Gdx.input.getY();
             Vector3 worldCoords = gameViewport.unproject(new Vector3(mouseX, mouseY, 0));
 
-            for (Zombie z : simulation.getZombies()) {
-                if (z.getZombieRectangle().contains(worldCoords.x, worldCoords.y)) {
-                    selectedZombie = z;
+            for (Creature c : simulation.getCreatures()) {
+                Zombie zombie = new Zombie(c);
+
+                // verifica se o retângulo do zumbi contém as coordenadas do mouse
+                if (zombie.getZombieRectangle().contains(worldCoords.x, worldCoords.y)) {
+                    selectedZombie = zombie;
                     break;
                 }
             }
@@ -264,7 +267,8 @@ public class LibGdxApplication extends ApplicationAdapter {
 
                     // inicializa a simulação com o número de zumbis
                     simulation = new Simulation(numZumbis, (int) gameViewport.getWorldWidth());
-                    currentZombie = simulation.process();
+                    currentZombie = new Zombie(simulation.process());
+                    //currentZombie.reset();
                 } catch (Exception e) {
                     System.err.println("Erro na caixa de entrada: " + e.getMessage());
                 }
@@ -274,7 +278,8 @@ public class LibGdxApplication extends ApplicationAdapter {
         // processa o próximo zumbi
         if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
             if (simulation != null && currentZombie.finishedProcessing()) {
-                currentZombie = simulation.process();
+                currentZombie = new Zombie(simulation.process());
+                //currentZombie.reset();
             }
         }
 
@@ -308,7 +313,8 @@ public class LibGdxApplication extends ApplicationAdapter {
                     currentZombie.steal(closestZombie);
                 }
 
-                currentZombie = simulation.process();
+                currentZombie = new Zombie(simulation.process());
+                //currentZombie.reset();
             }
         }
     }
@@ -317,8 +323,9 @@ public class LibGdxApplication extends ApplicationAdapter {
         Zombie closestZombie = null;
         double minDist = Double.MAX_VALUE;
 
-        for (Zombie z : simulation.getZombies()) {
-            if (z == currentZombie) continue;
+        for (Creature c : simulation.getCreatures()) {
+            Zombie z = new Zombie(c);
+            if (z.equals(currentZombie)) continue;
 
             double dist = Math.abs(z.getSprite().getX() - currentZombie.getSprite().getX());
             if (dist < minDist) {
@@ -348,7 +355,8 @@ public class LibGdxApplication extends ApplicationAdapter {
         }
 
         if (simulation != null) {
-            for (Zombie z : simulation.getZombies()) {
+            for (Creature c : simulation.getCreatures()) {
+                Zombie z = new Zombie(c);
                 z.draw(spriteBatch);
 
                 // desenha o zumbi

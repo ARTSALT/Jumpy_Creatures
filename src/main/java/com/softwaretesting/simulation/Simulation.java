@@ -1,6 +1,6 @@
 package com.softwaretesting.simulation;
 
-import com.softwaretesting.simulation.entity.Zombie;
+import com.softwaretesting.simulation.entity.Creature;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -11,17 +11,17 @@ public class Simulation {
     private static final Random random = new Random();
     private int iterations;                     // número de iterações
     private final int horizonWidth;             // largura do horizonte
-    private final List<Zombie> creatures;       // lista de criaturas
-    private Iterator<Zombie> iterator;          // iterador para percorrer a lista de criaturas
+    private final List<Creature> creatures;     // lista de criaturas
+    private Iterator<Creature> iterator;        // iterador para percorrer a lista de criaturas
     private final double factor;                // fator de conversão de moedas para a largura do horizonte
 
     /**
      * Cria uma nova simulação com o número de criaturas e a largura do horizonte especificados.
-     * @param numZombies número de criaturas
+     * @param numCreatures número de criaturas
      * @param horizonWidth largura do horizonte
      */
-    public Simulation(int numZombies, int horizonWidth) {
-        if (numZombies <= 0) {
+    public Simulation(int numCreatures, int horizonWidth) {
+        if (numCreatures <= 0) {
             throw new IllegalArgumentException("O número de criaturas não pode ser negativo ou zero.");
         }
 
@@ -31,12 +31,12 @@ public class Simulation {
 
         this.horizonWidth = horizonWidth;
         this.factor = horizonWidth / 1000000.0;
-        this.creatures = new ArrayList<>(numZombies);
+        this.creatures = new ArrayList<>(numCreatures);
 
-        // gera 'numZombies' criaturas
-        for (int i = 0; i < numZombies; i++) {
+        // gera 'numCreatures' criaturas
+        for (int i = 0; i < numCreatures; i++) {
             // cria uma nova criatura com 1000000 moedas e posição inicial na metade da largura do horizonte
-            creatures.add(new Zombie(1000000, horizonWidth / 2f));
+            creatures.add(new Creature(1000000, horizonWidth / 2f));
         }
 
         iterator = creatures.iterator();
@@ -45,7 +45,7 @@ public class Simulation {
     // processa todas as criaturas de uma vez
     public void run() {
         for (int i = 0; i < iterations; i++) {
-            for (Zombie creature : creatures) {
+            for (Creature creature : creatures) {
                 // desloca a criatura proporcionalmente a quantidade de moedas e a largura do horizonte
                 creature.setTargetPosition((creature.getPosition() + generateRandom() * creature.getCoins()) * factor);
             }
@@ -63,10 +63,10 @@ public class Simulation {
 
     public void printResults() {
         System.out.println("\n================================\n");
-        System.out.println("Iteração " + ++iterations);
+        System.out.println("Iteração " + iterations);
         for (int i = 0; i < creatures.size(); i++) {
-            Zombie creature = creatures.get(i);
-            System.out.println("Zumbi " + i + ": " + creature.getCoins() + " moedas, horizonte: " + creature.getSprite().getX());
+            Creature creature = creatures.get(i);
+            System.out.println("Criatura " + i + ": " + creature.getCoins() + " moedas, horizonte: " + creature.getPosition());
         }
     }
 
@@ -79,12 +79,12 @@ public class Simulation {
         return horizonWidth;
     }
 
-    public List<Zombie> getZombies() {
+    public List<Creature> getCreatures() {
         return creatures;
     }
 
     // processa a criatura atual e a retorna
-    public Zombie process() {
+    public Creature process() {
         if (!iterator.hasNext()) {
             if (creatures.isEmpty()) {
                 return null;
@@ -93,9 +93,8 @@ public class Simulation {
             printResults();                     // imprime os resultados da iteração
         }
 
-        Zombie creature = iterator.next();
+        Creature creature = iterator.next();
         creature.setTargetPosition((creature.getPosition() + generateRandom() * creature.getCoins()) * factor);
-        creature.reset();
 
         return creature;
     }
