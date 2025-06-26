@@ -5,10 +5,9 @@ import com.softwaretesting.simulation.entity.Creature;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 
 public class Simulation {
-    private static final Random random = new Random();
+    private final RandomProvider randomProvider;
     private int iterations;                     // número de iterações
     private final int horizonWidth;             // largura do horizonte
     private final List<Creature> creatures;     // lista de criaturas
@@ -18,17 +17,24 @@ public class Simulation {
     /**
      * Cria uma nova simulação com o número de criaturas e a largura do horizonte especificados.
      * @param numCreatures número de criaturas
+     * @param iterations número de iterações
      * @param horizonWidth largura do horizonte
+     * @param randomProvider provedor de números aleatórios
      */
-    public Simulation(int numCreatures, int horizonWidth) {
+    public Simulation(int numCreatures, int iterations, int horizonWidth, RandomProvider randomProvider) {
         if (numCreatures <= 0) {
             throw new IllegalArgumentException("O número de criaturas não pode ser negativo ou zero.");
+        }
+
+        if (iterations <= 0) {
+            throw new IllegalArgumentException("O número de iterações não pode ser negativo ou zero.");
         }
 
         if (horizonWidth <= 0) {
             throw new IllegalArgumentException("A largura do horizonte não pode ser negativa ou zero.");
         }
 
+        this.randomProvider = randomProvider;
         this.horizonWidth = horizonWidth;
         this.factor = horizonWidth / 1000000.0;
         this.creatures = new ArrayList<>(numCreatures);
@@ -59,14 +65,15 @@ public class Simulation {
     }
 
     // gera um número aleatório entre -1 e 1
-    private double generateRandom() { return random.nextDouble(-1, 1); }
+    private double generateRandom() { return randomProvider.nextDouble(-1, 1); }
 
     public void printResults() {
         System.out.println("\n================================\n");
         System.out.println("Iteração " + iterations);
         for (int i = 0; i < creatures.size(); i++) {
             Creature creature = creatures.get(i);
-            System.out.println("Criatura " + i + ": " + creature.getCoins() + " moedas, horizonte: " + creature.getPosition());
+            System.out.println("Criatura " + i + ": " + creature.getCoins() + " moedas, horizonte: "
+                + creature.getPosition());
         }
     }
 

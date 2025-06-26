@@ -25,6 +25,8 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import com.softwaretesting.simulation.Simulation;
 import com.softwaretesting.simulation.entity.Creature;
 
+import java.util.Random;
+
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class LibGdxApplication extends ApplicationAdapter {
     // classe que gerencia a simulação
@@ -266,7 +268,8 @@ public class LibGdxApplication extends ApplicationAdapter {
                     System.out.println("Número de zumbis: " + numZumbis);
 
                     // inicializa a simulação com o número de zumbis
-                    simulation = new Simulation(numZumbis, (int) gameViewport.getWorldWidth());
+                    simulation = new Simulation(numZumbis, 1, (int) gameViewport.getWorldWidth(),
+                        (max, min) -> new Random().nextDouble() * (max - min) + min);
                     currentZombie = new Zombie(simulation.process());
                     //currentZombie.reset();
                 } catch (Exception e) {
