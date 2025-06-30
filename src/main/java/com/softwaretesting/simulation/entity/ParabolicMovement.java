@@ -90,4 +90,24 @@ public class ParabolicMovement {
     public float getDistanceX() {
         return endPoint.x - startPoint.x;
     }
+
+    public float jumpHeight() {
+        return jumpHeight;
+    }
+
+    public float getTimeToApex() {
+        return (float) Math.sqrt((2 * jumpHeight) / gravity);
+    }
+
+    public float getTotalTime() {
+        return (float) (Math.sqrt((2 * jumpHeight) / gravity)) * 2;
+    }
+
+    public Vector2 getVelocity() {
+        return velocity;
+    }
+
+    public float getGravity() {
+        return gravity;
+    }
 }
