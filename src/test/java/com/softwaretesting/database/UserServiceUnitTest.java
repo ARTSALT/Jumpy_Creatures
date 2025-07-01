@@ -20,6 +20,7 @@ import static org.mockito.Mockito.*;
  */
 public class UserServiceUnitTest {
 
+    // mock do UserRepository para simular interações com o banco de dados
     private UserRepository mockUserRepository;
     private UserService userService;
 
@@ -47,8 +48,7 @@ public class UserServiceUnitTest {
         // simula que o salvamento é bem-sucedido
         when(mockUserRepository.save(any(User.class))).thenReturn(true);
 
-        boolean result = userService.registerUser("newuser", "plainpassword");
-        assertThat(result).isTrue();
+        assertThat(userService.registerUser(new User("newuser", "plainpassword"))).isTrue();
 
         // verifica se existsByUsername foi chamado para o username específico
         verify(mockUserRepository, times(1)).existsByUsername("newuser");
@@ -68,11 +68,24 @@ public class UserServiceUnitTest {
         // simula que o usuário já existe
         when(mockUserRepository.existsByUsername(anyString())).thenReturn(true);
 
-        assertThatThrownBy(() -> userService.registerUser("existinguser", "plainpassword"))
+        assertThatThrownBy(() -> userService.registerUser(new User("existinguser", "plainpassword")))
             .isInstanceOf(IllegalArgumentException.class);
 
         // verifica se existsByUsername foi chamado uma vez
         verify(mockUserRepository, times(1)).existsByUsername("existinguser");
+
+        // verifica que o metodo save nunca foi chamado
+        verify(mockUserRepository, never()).save(any(User.class));
+    }
+
+    // Testes MC/DC registerUser
+    @Test
+    @DisplayName("MC/DC if (user == null)")
+    void shouldNotRegisterNullUser() throws SQLException {
+        // simula que o usuário é nulo
+        assertThatThrownBy(() -> userService.registerUser(null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("User cannot be null.");
 
         // verifica que o metodo save nunca foi chamado
         verify(mockUserRepository, never()).save(any(User.class));
@@ -86,19 +99,21 @@ public class UserServiceUnitTest {
     @DisplayName("Deve permitir login com credenciais corretas")
     void shouldAllowLoginWithCorrectCredentials() throws SQLException {
         String username = "testuser";
-        String password = "correctpassword";
+        String plainPassword = "correctpassword";
 
-        // simula hash BCrypt
-        String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt(10));
-        User user = new User(1L, username, hashedPassword, "avatar.png", 0);
+        // cria um usuário com nome e senha em texto plano
+        User loginAttemptUser = new User(username, plainPassword);
 
-        // Simula que o findByUsername retorna o usuário
-        when(mockUserRepository.findByUsername(username)).thenReturn(Optional.of(user));
+        // simula que o findByUsername retorna um usuário com senha hasheada
+        String hashedPassword = BCrypt.hashpw(plainPassword, BCrypt.gensalt(10));
+        User userInDb = new User(1L, username, hashedPassword, "avatar.png", 0);
+        when(mockUserRepository.findByUsername(username)).thenReturn(Optional.of(userInDb));
 
-        Optional<User> loggedInUser = userService.login(username, password);
+        // tenta fazer o login com o usuário que tem a senha em texto plano
+        Optional<User> loggedInUser = userService.login(loginAttemptUser);
 
-        assertThat(loggedInUser.isPresent()).isTrue();
-        assertThat(username).isEqualTo(loggedInUser.get().getUsername());
+        assertThat(loggedInUser).isPresent();
+        assertThat(loggedInUser.get().getUsername()).isEqualTo(username);
         verify(mockUserRepository, times(1)).findByUsername(username);
     }
 
@@ -110,17 +125,21 @@ public class UserServiceUnitTest {
     @DisplayName("Não deve permitir login com senha incorreta")
     void shouldNotAllowLoginWithIncorrectPassword() throws SQLException {
         String username = "testuser";
-        String password = "correctpassword";
+        String correctPassword = "correctpassword";
         String wrongPassword = "wrongpassword";
-        String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt(10));
-        User user = new User(1L, username, hashedPassword, "avatar.png", 0);
 
-        // simula que o findByUsername retorna o usuário
-        when(mockUserRepository.findByUsername(username)).thenReturn(Optional.of(user));
+        // cria um usuário com nome e senha incorreta
+        User loginAttemptUser = new User(username, wrongPassword);
 
-        Optional<User> loggedInUser = userService.login(username, wrongPassword);
+        // simula que o findByUsername retorna um usuário com senha hasheada
+        String hashedPassword = BCrypt.hashpw(correctPassword, BCrypt.gensalt(10));
+        User userInDb = new User(1L, username, hashedPassword, "avatar.png", 0);
+        when(mockUserRepository.findByUsername(username)).thenReturn(Optional.of(userInDb));
 
-        assertThat(loggedInUser.isPresent()).isFalse();
+        // tenta fazer o login com a senha incorreta
+        Optional<User> loggedInUser = userService.login(loginAttemptUser);
+
+        assertThat(loggedInUser).isEmpty();
         verify(mockUserRepository, times(1)).findByUsername(username);
     }
 
@@ -131,15 +150,27 @@ public class UserServiceUnitTest {
     @Test
     @DisplayName("Não deve permitir login para usuário inexistente")
     void shouldNotAllowLoginForNonExistentUser() throws SQLException {
-        String username = "nonexistentuser";
+        User user = new User("nonexistentuser", "anyPassword");
 
         // simula que o findByUsername retorna um Optional vazio
-        when(mockUserRepository.findByUsername(username)).thenReturn(Optional.empty());
+        when(mockUserRepository.findByUsername(user.getUsername())).thenReturn(Optional.empty());
 
-        Optional<User> loggedInUser = userService.login(username, "anypassword");
+        Optional<User> loggedInUser = userService.login(user);
 
         assertThat(loggedInUser.isPresent()).isFalse();
-        verify(mockUserRepository, times(1)).findByUsername(username);
+        verify(mockUserRepository, times(1)).findByUsername(user.getUsername());
+    }
+
+    @Test
+    @DisplayName("MC/DC if (user == null) no login")
+    void shouldNotLoginWithNullUser() throws SQLException {
+        // simula que o usuário é nulo
+        assertThatThrownBy(() -> userService.login(null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("User cannot be null.");
+
+        // verifica que o metodo findByUsername nunca foi chamado
+        verify(mockUserRepository, never()).findByUsername(anyString());
     }
 
     /**
@@ -149,52 +180,29 @@ public class UserServiceUnitTest {
     @Test
     @DisplayName("Deve verificar corretamente a existência do usuário")
     void shouldVerifyUserExistence() throws SQLException {
-        String existingUsername = "existingUserCheck";
-        String nonExistingUsername = "nonExistingUserCheck";
+        User existingUser = new User("existingUsername", "anyPassword");
+        User nonExistingUser = new User("nonExistingUsername", "anyPassword");
 
-        when(mockUserRepository.existsByUsername(existingUsername)).thenReturn(true);
-        when(mockUserRepository.existsByUsername(nonExistingUsername)).thenReturn(false);
+        when(mockUserRepository.existsByUsername(existingUser.getUsername())).thenReturn(true);
+        when(mockUserRepository.existsByUsername(nonExistingUser.getUsername())).thenReturn(false);
 
-        assertThat(userService.userExists(existingUsername)).isTrue();
-        assertThat(userService.userExists(nonExistingUsername)).isFalse();
+        assertThat(userService.userExists(existingUser)).isTrue();
+        assertThat(userService.userExists(nonExistingUser)).isFalse();
 
-        verify(mockUserRepository, times(1)).existsByUsername(existingUsername);
-        verify(mockUserRepository, times(1)).existsByUsername(nonExistingUsername);
+        verify(mockUserRepository, times(1)).existsByUsername(existingUser.getUsername());
+        verify(mockUserRepository, times(1)).existsByUsername(nonExistingUser.getUsername());
     }
 
-    /**
-     * Testa o registro de um usuário com nome de usuário em branco.
-     * Verifica se o metodo registerUser lida corretamente com nomes de usuário em branco.
-     */
     @Test
-    @DisplayName("Não deve permitir registro com nome de usuário em branco")
-    void shouldNotAllowRegistrationWithBlankUsername() throws SQLException {
-        String blankUsername = "";
-        String password = "validPassword";
+    @DisplayName("MC/DC if (user == null) na verificação de existência do usuário")
+    void shouldNotVerifyExistenceWithNullUser() throws SQLException {
+        // simula que o usuário é nulo
+        assertThatThrownBy(() -> userService.userExists(null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("User cannot be null.");
 
-        // tenta registrar o usuário com nome de usuário em branco
-        assertThatThrownBy(() -> userService.registerUser(blankUsername, password))
-            .isInstanceOf(IllegalArgumentException.class);
-        verify(mockUserRepository, never()).save(any(User.class));
-    }
-
-    /**
-     * Testa o registro de um usuário com senha em branco.
-     * Verifica se o metodo registerUser lida corretamente com senhas em branco.
-     */
-    @Test
-    @DisplayName("Não deve permitir registro com senha em branco")
-    void shouldNotAllowRegistrationWithBlankPassword() throws SQLException {
-        String username = "blankPasswordUser";
-        String blankPassword = "";
-
-        // simula que o usuário não existe
-        when(mockUserRepository.existsByUsername(username)).thenReturn(false);
-
-        // tenta registrar o usuário com senha em branco
-        assertThatThrownBy(() -> userService.registerUser(username, blankPassword))
-            .isInstanceOf(IllegalArgumentException.class);
-        verify(mockUserRepository, never()).save(any(User.class));
+        // verifica que o metodo existsByUsername nunca foi chamado
+        verify(mockUserRepository, never()).existsByUsername(anyString());
     }
 
     /**
@@ -204,16 +212,15 @@ public class UserServiceUnitTest {
     @Test
     @DisplayName("Deve excluir um usuário existente")
     void shouldDeleteExistingUser() throws SQLException {
-        String username = "userToDelete";
+        User userToDelete = new User("userToDelete", "anyPassword");
 
         // simula que o usuário existe
-        when(mockUserRepository.existsByUsername(username)).thenReturn(true);
-        when(mockUserRepository.deleteByUsername(username)).thenReturn(true);
+        when(mockUserRepository.existsByUsername(userToDelete.getUsername())).thenReturn(true);
+        when(mockUserRepository.deleteByUsername(userToDelete.getUsername())).thenReturn(true);
 
-        boolean result = userService.deleteUser(username);
-        assertThat(result).isTrue();
+        assertThat(userService.deleteUser(userToDelete)).isTrue();
 
-        verify(mockUserRepository, times(1)).deleteByUsername(username);
+        verify(mockUserRepository, times(1)).deleteByUsername(userToDelete.getUsername());
     }
 
     /**
@@ -223,14 +230,26 @@ public class UserServiceUnitTest {
     @Test
     @DisplayName("Não deve excluir um usuário inexistente")
     void shouldNotDeleteNonExistentUser() throws SQLException {
-        String username = "nonExistentUser";
+        User user = new User("nonExistentUser", "anyPassword");
 
         // simula que o usuário não existe
-        when(mockUserRepository.existsByUsername(username)).thenReturn(false);
+        when(mockUserRepository.existsByUsername(user.getUsername())).thenReturn(false);
 
-        assertThatThrownBy(() -> userService.deleteUser(username))
+        assertThatThrownBy(() -> userService.deleteUser(user))
             .isInstanceOf(IllegalArgumentException.class);
-        verify(mockUserRepository, never()).deleteByUsername(username);
+        verify(mockUserRepository, never()).deleteByUsername(user.getUsername());
+    }
+
+    @Test
+    @DisplayName("MC/DC if (user == null) na exclusão de usuário")
+    void shouldNotDeleteWithNullUser() throws SQLException {
+        // simula que o usuário é nulo
+        assertThatThrownBy(() -> userService.deleteUser(null))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("User cannot be null.");
+
+        // verifica que o metodo deleteByUsername nunca foi chamado
+        verify(mockUserRepository, never()).deleteByUsername(anyString());
     }
 
     /**

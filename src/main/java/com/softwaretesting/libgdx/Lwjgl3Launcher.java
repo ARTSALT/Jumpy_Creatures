@@ -2,16 +2,17 @@ package com.softwaretesting.libgdx;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.softwaretesting.database.UserService;
 
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {
-    public static void launch() {
+    public static void launch(UserService userService) {
         if (StartupHelper.startNewJvmIfRequired()) return; // This handles macOS support and helps on Windows.
-        createApplication();
+        createApplication(userService);
     }
 
-    private static void createApplication() {
-        new Lwjgl3Application(new LibGdxApplication(), getDefaultConfiguration());
+    private static void createApplication(UserService userService) {
+        new Lwjgl3Application(new LibGdxApplication(userService), getDefaultConfiguration());
     }
 
     private static Lwjgl3ApplicationConfiguration getDefaultConfiguration() {

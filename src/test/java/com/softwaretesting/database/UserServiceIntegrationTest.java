@@ -2,9 +2,10 @@ package com.softwaretesting.database;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.sql.Connection;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Optional;
 
@@ -12,100 +13,89 @@ import static org.assertj.core.api.Assertions.*;
 
 /**
  * Testes de integração para a classe UserService, utilizando um banco de dados H2 em memória.
- * Foca na interação real com o banco de dados, testando o registro e login de usuários.
+ * Foca na interação real entre o UserService e a camada de banco de dados.
  */
+@DisplayName("Testes de Integração para UserService com Banco de Dados H2 em Memória")
 public class UserServiceIntegrationTest {
 
+    private DatabaseFactory databaseFactory;
+    private H2ConnectionProvider connectionProvider;
     private UserService userService;
-    private Connection testConnection;
 
     /**
-     * Testes unitários para a classe UserService, utilizando um banco de dados H2 em memória.
-     * Os testes incluem registro de usuário, login e verificação de usuários existentes.
+     * Configura um ambiente de teste limpo antes de cada teste.
+     * Cria um novo provedor de conexão, uma nova fábrica e um novo serviço.
      */
     @BeforeEach
-    void setup() throws SQLException {
-        testConnection = ConnectionFactory.getConnection(true); // true para usar DB em memória
+    void setup() throws SQLException, IOException {
+        this.connectionProvider = H2ConnectionProvider.builder().useInMemory(true).build();
+        this.databaseFactory = new DatabaseFactory(connectionProvider);
+        this.userService = databaseFactory.getUserService();
 
-        ConnectionFactory.initializeDatabase(testConnection);   // inicializa estrutura do bd
-
-        UserRepository userRepository = new UserRepositoryImpl(testConnection);
-        userService = new UserService(userRepository);
-
-        System.out.println("Setup completo: Novo DB em memória inicializado para o teste.");
+        // limpa o banco de dados antes de cada teste
+        connectionProvider.initializeDatabase(null);
+        System.out.println("Setup completo: Banco de dados em memória inicializado.");
     }
 
     /**
-     * Metodo de limpeza executado após cada teste.
-     * Fecha a conexão com o banco de dados H2 em memória.
+     * Limpa o ambiente após cada teste, fechando a conexão com o banco.
      */
     @AfterEach
-    void close() {
-        if (testConnection != null) {
-            try {
-                testConnection.close();
-                System.out.println("Teardown completo: Conexão fechada, DB em memória descartado.");
-            } catch (SQLException e) {
-                System.err.println("Erro ao fechar conexão de teste: " + e.getMessage());
-            }
+    void tearDown() throws SQLException {
+        if (this.databaseFactory != null) {
+            this.databaseFactory.close();
+            System.out.println("Teardown completo: Conexão fechada, DB em memória descartado.");
         }
     }
 
-    /**
-     * Testa o registro de um usuário, verificando se o usuário é registrado com sucesso
-     * e se ele existe no banco de dados após o registro.
-     */
     @Test
-    public void testRegisterUser() {
-        String username = "testUser";
-        String password = "testPassword";
+    @DisplayName("Deve registrar um novo usuário com sucesso")
+    void shouldRegisterNewUserSuccessfully() throws SQLException {
+        User user = new User("testUser", "validPassword123");
 
-        assertThatNoException().isThrownBy(() -> userService.registerUser(username, password));
-        assertThatNoException().isThrownBy(() -> assertThat(userService.userExists(username)).isTrue());
+        boolean result = userService.registerUser(user);
+        boolean exists = userService.userExists(user);
+
+        assertThat(result).isTrue();
+        assertThat(exists).isTrue();
     }
 
-    /**
-     * Testa o login de um usuário registrado, verificando se o login é bem-sucedido
-     */
     @Test
-    public void testLoginUser() {
-        String username = "testUser2";
-        String password = "testPassword2";
-
-        assertThatNoException().isThrownBy(() -> {
-            boolean registrationResult = userService.registerUser(username, password);
-            assertThat(registrationResult).isTrue();
-
-            Optional<User> userOptional = userService.login(username, password);
-            assertThat(userOptional.isPresent()).isTrue();
-            assertThat(username).isEqualTo(userOptional.get().getUsername());
-        });
-    }
-
-    /**
-     * Testa o login de um usuário com senha incorreta, verificando se o login falha
-     */
-    @Test
-    public void testLoginUserIncorrectPassword() throws SQLException {
-        String username = "testUser3";
-        String password = "testPassword3";
-        userService.registerUser(username, password); // registra um usuário para o teste
-
-        Optional<User> userOptional = userService.login(username, "wrongPassword");
-        assertThat(userOptional.isPresent()).isFalse();
-    }
-
-    /**
-     * Testa o login de um usuário não registrado, verificando se o login falha
-     */
-    @Test
-    public void testRegisterExistingUser() throws SQLException {
-        String username = "existingUser";
-        String password = "anyPassword";
-        userService.registerUser(username, password); // registra o usuário pela primeira vez
+    @DisplayName("Deve impedir o registro de um usuário com o mesmo username")
+    void shouldPreventRegisteringExistingUser() throws SQLException {
+        User user = new User("existingUser", "anyPassword123");
+        userService.registerUser(user); // registra o usuário pela primeira vez
 
         // tenta registrar o mesmo usuário novamente
-        assertThatThrownBy(() -> userService.registerUser(username, "anotherPassword"))
-            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> userService.registerUser(user))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Username already exists.");
+    }
+
+    @Test
+    @DisplayName("Deve permitir o login de um usuário registrado com a senha correta")
+    void shouldAllowLoginForRegisteredUserWithCorrectPassword() throws SQLException {
+        User userToRegister = new User("testUser", "correctPassword123");
+        userService.registerUser(userToRegister);
+
+        User userToLogin = new User("testUser", "correctPassword123");
+
+        Optional<User> loggedInUser = userService.login(userToLogin);
+
+        assertThat(loggedInUser).isPresent();
+        assertThat(loggedInUser.get().getUsername()).isEqualTo(userToRegister.getUsername());
+    }
+
+    @Test
+    @DisplayName("Não deve permitir o login com uma senha incorreta")
+    void shouldNotAllowLoginWithIncorrectPassword() throws SQLException {
+        User userToRegister = new User("testUser", "correctPassword123");
+        userService.registerUser(userToRegister);
+
+        User userToLogin = new User("testUser", "WRONG_Password123");
+
+        Optional<User> loggedInUser = userService.login(userToLogin);
+
+        assertThat(loggedInUser).isEmpty();
     }
 }

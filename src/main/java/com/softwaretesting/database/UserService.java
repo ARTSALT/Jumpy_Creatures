@@ -18,63 +18,53 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public Optional<User> getUserByUsername(String username) throws SQLException {
-        if (username == null || username.isEmpty()) {
-            throw new IllegalArgumentException("Nome de usuário não pode ser nulo ou vazio.");
+    public boolean registerUser(User user) throws SQLException {
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null.");
         }
-
-        return userRepository.findByUsername(username);
-    }
-
-    public boolean registerUser(String username, String plainTextPassword) throws SQLException {
-        if (username == null || plainTextPassword == null || username.isEmpty() || plainTextPassword.isEmpty()) {
-            throw new IllegalArgumentException("Nome de usuário e senha não podem ser nulos ou vazios.");
-        }
-        if (userRepository.existsByUsername(username)) {
-            throw new IllegalArgumentException("Nome de usuário já existe.");
-        }
-        if (plainTextPassword.length() < 8) {
-            throw new IllegalArgumentException("A senha deve ter pelo menos 8 caracteres.");
+        if (userRepository.existsByUsername(user.getUsername())) {
+            throw new IllegalArgumentException("Username already exists.");
         }
 
         // hasheia a senha antes de salvar
-        String hashedPassword = BCrypt.hashpw(plainTextPassword, BCrypt.gensalt(10));
-        User newUser = new User(username, hashedPassword);
-        return userRepository.save(newUser);
+        String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt(10));
+        user.setPassword(hashedPassword);
+        return userRepository.save(user);
     }
 
-    public Optional<User> login(String username, String plainTextPassword) throws SQLException {
-        if (username == null || plainTextPassword == null || username.isEmpty() || plainTextPassword.isEmpty()) {
-            throw new IllegalArgumentException("Nome de usuário e senha não podem ser nulos ou vazios.");
+    public Optional<User> login(User user) throws SQLException {
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null.");
         }
 
-        Optional<User> userOptional = userRepository.findByUsername(username);
+        Optional<User> userOptional = userRepository.findByUsername(user.getUsername());
         if (userOptional.isPresent()) {
-            User user = userOptional.get();
+            User userOpt = userOptional.get();
             // compara a senha fornecida com o hash armazenado
-            if (BCrypt.checkpw(plainTextPassword, user.getPassword())) {
+            if (BCrypt.checkpw(user.getPassword(), userOpt.getPassword())) {
                 return userOptional;
             }
         }
         return Optional.empty();
     }
 
-    public boolean userExists(String username) throws SQLException {
-        if (username == null || username.isEmpty()) {
-            throw new IllegalArgumentException("Nome de usuário não pode ser nulo ou vazio.");
+    public boolean userExists(User user) throws SQLException {
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null.");
         }
-        return userRepository.existsByUsername(username);
+
+        return userRepository.existsByUsername(user.getUsername());
     }
 
-    public boolean deleteUser(String username) throws SQLException {
-        if (username == null || username.isEmpty()) {
-            throw new IllegalArgumentException("Nome de usuário não pode ser nulo ou vazio.");
+    public boolean deleteUser(User user) throws SQLException {
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null.");
         }
-        if (!userRepository.existsByUsername(username)) {
-            throw new IllegalArgumentException("Usuário não encontrado.");
+        if (!userRepository.existsByUsername(user.getUsername())) {
+            throw new IllegalArgumentException("User does not exists.");
         }
 
-        return userRepository.deleteByUsername(username);
+        return userRepository.deleteByUsername(user.getUsername());
     }
 
     public List<User> getAllUsers() throws SQLException {

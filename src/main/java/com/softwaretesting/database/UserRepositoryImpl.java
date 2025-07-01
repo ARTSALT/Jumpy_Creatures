@@ -81,9 +81,9 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public List<User> findAll() throws SQLException {
         String sql = "SELECT id, username, password, avatar_url, score FROM users";
+        List<User> users = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-            List<User> users = new ArrayList<>();
             while (rs.next()) {
                 User user = new User(
                     rs.getLong("id"),
@@ -94,7 +94,7 @@ public class UserRepositoryImpl implements UserRepository {
                 );
                 users.add(user);
             }
-            return users;
         }
+        return users;
     }
 }
