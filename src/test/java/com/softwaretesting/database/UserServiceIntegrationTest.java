@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.*;
 public class UserServiceIntegrationTest {
 
     private DatabaseFactory databaseFactory;
-    private H2ConnectionProvider connectionProvider;
     private UserService userService;
 
     /**
@@ -28,7 +27,7 @@ public class UserServiceIntegrationTest {
      */
     @BeforeEach
     void setup() throws SQLException, IOException {
-        this.connectionProvider = H2ConnectionProvider.builder().useInMemory(true).build();
+        H2ConnectionProvider connectionProvider = H2ConnectionProvider.builder().useInMemory(true).build();
         this.databaseFactory = new DatabaseFactory(connectionProvider);
         this.userService = databaseFactory.getUserService();
 
