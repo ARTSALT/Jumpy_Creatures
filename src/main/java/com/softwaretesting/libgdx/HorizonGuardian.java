@@ -8,13 +8,14 @@ import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.softwaretesting.simulation.entity.Creature;
+import com.softwaretesting.simulation.entity.Guardian;
 import com.softwaretesting.simulation.entity.ParabolicMovement;
 
 import java.util.Arrays;
 
-public class Zombie {
+public class HorizonGuardian {
 
-    public enum ZombieState {
+    public enum State {
         IDLE,
         JUMPING,
         ATTACKING,
@@ -25,7 +26,7 @@ public class Zombie {
     private final Creature creature;
 
     // spritesheet e texturas
-    static Texture spriteSheet;
+    private static Texture spriteSheet;
     private static Texture coinTexture;
 
     // animações do zumbi
@@ -36,14 +37,14 @@ public class Zombie {
     private static Animation<TextureRegion> beingHit;
     private static Animation<TextureRegion> dying;
 
-    private ZombieState currentState;
+    private HorizonGuardian.State currentState;
     private float stateTime = 0f;
 
     // audio
     private static Sound attackSound;
 
     // retângulos para colisão entre zumbis
-    private final Rectangle zombieRectangle;
+    private final Rectangle guardianRectangle;
 
     // classe que gerencia o salto em um movimento parabólico
     private ParabolicMovement parm;
@@ -55,22 +56,22 @@ public class Zombie {
     private boolean flip = false;
 
     // sistema de texto
-    static BitmapFont font;
+    private static BitmapFont font;
     private String statusText = null;
     private Color statusColor = null;
     private float statusTimer = 0f;
 
     /**
-     * Cria um zumbi associado a uma criatura.
+     * Cria guadião associado a uma criatura.
      * A posição inicial do sprite é baseada na posição da criatura.
      *
-     * @param creature A criatura associada a este zumbi.
+     * @param creature A criatura associada ao guardião.
      */
-    public Zombie(Creature creature) {
+    public HorizonGuardian(Creature creature) {
         this.creature = creature;
 
         if (spriteSheet == null) {
-            throw new IllegalStateException("SpriteSheet não carregado. Use Zombie.loadResources() para carregar.");
+            throw new IllegalStateException("SpriteSheet não carregado. Use Guardian.loadResources() para carregar.");
         }
 
         // posição inicial do sprite é baseada na posição da criatura
@@ -80,12 +81,12 @@ public class Zombie {
         sprite = new Sprite(spriteSheet);
         sprite.setBounds(initialX, y, 350, 350);
 
-        zombieRectangle = new Rectangle();
-        currentState = ZombieState.IDLE;
+        guardianRectangle = new Rectangle();
+        currentState = HorizonGuardian.State.IDLE;
 
         parm = new ParabolicMovement(
-            new Vector2(sprite.getX(), sprite.getY()),
-            new Vector2(sprite.getX(), sprite.getY())
+                new Vector2(sprite.getX(), sprite.getY()),
+                new Vector2(sprite.getX(), sprite.getY())
         );
 
         coinSprite = new Sprite(coinTexture);
@@ -93,7 +94,7 @@ public class Zombie {
     }
 
     /**
-     * Lógica do zumbi, atualiza o estado e a posição do sprite.
+     * Lógica do guardião, atualiza o estado e a posição do sprite.
      * Deve ser chamado a cada frame.
      */
     public void logic() {
@@ -101,21 +102,22 @@ public class Zombie {
 
         switch(currentState) {
             case IDLE:
-                currentState = ZombieState.JUMPING;
+                currentState = HorizonGuardian.State.JUMPING;
                 stateTime = 0;
                 jump((float) creature.getTargetPosition());
                 break;
+
             case JUMPING:
                 if (sprite.getY() == y) {
                     creature.updatePosition();
-                    currentState = ZombieState.ATTACKING;
+                    currentState = HorizonGuardian.State.ATTACKING;
                     stateTime = 0;
                     attackSound.play();
                 }
                 break;
             case ATTACKING:
                 if (attacking.isAnimationFinished(stateTime)) {
-                    currentState = ZombieState.FINISHED;
+                    currentState = HorizonGuardian.State.FINISHED;
                     stateTime = 0;
                 }
                 break;
@@ -124,6 +126,27 @@ public class Zombie {
         }
 
         coinSprite.setPosition(sprite.getX() + sprite.getWidth() / 2f - 50f, sprite.getY() + 60f);
+    }
+
+    /**
+     * Verifica se a base do retângulo de colisão deste guardião toca o centro da
+     * base do retângulo de um zumbi.
+     *
+     * @param zombie O zumbi para checar a colisão.
+     * @return true se houver colisão, false caso contrário.
+     */
+    public boolean collidesWith(Zombie zombie) {
+        Rectangle thisRect = this.getGuardianRectangle();
+        Rectangle otherRect = zombie.getZombieRectangle();
+
+        // Ponto central da base do outro guardião
+        Vector2 otherBaseCenter = new Vector2(
+                otherRect.x + otherRect.width / 2,
+                otherRect.y
+        );
+
+        // Checa se o ponto central da base do zumbi está dentro do retângulo deste guardião
+        return thisRect.contains(otherBaseCenter);
     }
 
     /**
@@ -139,7 +162,7 @@ public class Zombie {
      * Desenha o estado atual do zumbi na tela, a cada frame.
      */
     public void draw(SpriteBatch spriteBatch) {
-        if (currentState == ZombieState.JUMPING) {
+        if (currentState == HorizonGuardian.State.JUMPING) {
             parm.update(Gdx.graphics.getDeltaTime());
             sprite.setPosition(parm.getPosition().x, parm.getPosition().y);
         }
@@ -147,7 +170,7 @@ public class Zombie {
         TextureRegion currentFrame = getFrame();
         sprite.setRegion(currentFrame);
 
-        if (currentState == ZombieState.JUMPING) {
+        if (currentState == HorizonGuardian.State.JUMPING) {
             flip = !(parm.getEndPoint().x > parm.getStartPoint().x);
         }
 
@@ -170,13 +193,13 @@ public class Zombie {
         if (statusText != null && statusColor != null) {
             font.setColor(statusColor);
             font.draw(spriteBatch, statusText,
-                sprite.getX() + 30f,
-                sprite.getY() + sprite.getHeight());
+                    sprite.getX() + 30f,
+                    sprite.getY() + sprite.getHeight());
         }
     }
 
     public void reset() {
-        currentState = ZombieState.IDLE;
+        currentState = HorizonGuardian.State.IDLE;
         stateTime = 0f;
         flip = false;
         sprite.setX((float) creature.getPosition());
@@ -189,10 +212,10 @@ public class Zombie {
 
             case JUMPING:
                 if (sprite.getY() < parm.getJumpHeight() - 1f &&
-                    sprite.getX() < parm.getStartPoint().x + (parm.getDistanceX() * 0.4f)) {
+                        sprite.getX() < parm.getStartPoint().x + (parm.getDistanceX() * 0.4f)) {
                     return jumpingUp.getKeyFrame(stateTime, false);
                 } else if (sprite.getY() < parm.getJumpHeight() - 1f &&
-                    sprite.getX() >= parm.getStartPoint().x + (parm.getDistanceX() * 0.4f)) {
+                        sprite.getX() >= parm.getStartPoint().x + (parm.getDistanceX() * 0.4f)) {
                     return jumpingDown.getKeyFrame(stateTime, false);
                 } else {
                     return landing.getKeyFrame(stateTime, false);
@@ -228,31 +251,31 @@ public class Zombie {
         return sprite;
     }
 
-    public Rectangle getZombieRectangle() {
-        zombieRectangle.setPosition(sprite.getX() + 100f, sprite.getY() + 40f);
-        zombieRectangle.setSize(sprite.getWidth() * 0.4f, sprite.getHeight() * 0.8f);
-        return zombieRectangle;
+    public Rectangle getGuardianRectangle() {
+        guardianRectangle.setPosition(sprite.getX() + 100f, sprite.getY() + 40f);
+        guardianRectangle.setSize(sprite.getWidth() * 0.4f, sprite.getHeight() * 0.8f);
+        return guardianRectangle;
     }
 
     public boolean finishedProcessing() {
-        return currentState == ZombieState.FINISHED;
+        return currentState == HorizonGuardian.State.FINISHED;
     }
 
-    void setStatusText(String text, Color color) {
+    private void setStatusText(String text, Color color) {
         this.statusText = text;
         this.statusColor = color;
         this.statusTimer = 3f; // 3 segundos de exibição
     }
 
     public static void loadResources(String spritesheetPath, String audioPath, BitmapFont font) {
-        if (Zombie.spriteSheet != null) {
-            Zombie.spriteSheet.dispose();
+        if (HorizonGuardian.spriteSheet != null) {
+            HorizonGuardian.spriteSheet.dispose();
         }
 
-        Zombie.spriteSheet = new Texture(Gdx.files.internal(spritesheetPath));
+        HorizonGuardian.spriteSheet = new Texture(Gdx.files.internal(spritesheetPath));
 
         TextureRegion[][] keyframes = TextureRegion.split(spriteSheet,
-            spriteSheet.getWidth() / 8, spriteSheet.getHeight() / 4);
+                spriteSheet.getWidth() / 8, spriteSheet.getHeight() / 4);
 
         // cada keyframe tem tamanho 8, mas a maioria das animações tem menos que 8 frames
         TextureRegion[] attackingFrames = Arrays.copyOfRange(keyframes[0], 0, 4); // 4 frames
@@ -275,7 +298,7 @@ public class Zombie {
         }
 
         coinTexture = new Texture(Gdx.files.internal("images/coin.png"));
-        Zombie.font = font;
+        HorizonGuardian.font = font;
     }
 
     public static void unloadResources() {

@@ -1,12 +1,8 @@
 package com.softwaretesting.simulation.entity;
 
-/**
- * Representa uma criatura no ambiente da simulação.
- * Cada criatura possui uma quantidade de moedas e uma posição no horizonte.
- * As criaturas podem roubar moedas umas das outras e atualizar sua posição por saltos.
- */
-public class Creature {
+import com.softwaretesting.simulation.entity.Creature;
 
+public class Guardian {
     // moedas e posição da criatura
     private int coins;
     private double position;
@@ -17,7 +13,7 @@ public class Creature {
      * @param coins A quantidade de moedas da criatura, não pode ser negativa.
      * @param initialPosition A posição inicial da criatura.
      */
-    public Creature(int coins, double initialPosition) {
+    public Guardian(int coins, double initialPosition) {
         if (coins < 0) {
             throw new IllegalArgumentException("A quantidade de moedas não pode ser negativa.");
         }
@@ -55,12 +51,17 @@ public class Creature {
         return stolenCoins;
     }
 
-    public int getCoins() {
-        return coins;
+    /**
+     * Rouba todas as moedas de um cluster de criaturas.
+     */
+    public int killCluster(Creature otherCreature) {
+        this.coins += otherCreature.getCoins();
+        otherCreature.setCoins(0);
+        return this.coins;
     }
 
-    public void setCoins(int coins) {
-        this.coins = coins;
+    public int getCoins() {
+        return coins;
     }
 
     public double getPosition() {
