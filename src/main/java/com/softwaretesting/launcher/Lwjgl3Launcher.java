@@ -22,6 +22,7 @@ public class Lwjgl3Launcher {
         configuration.useVsync(true);
         configuration.setForegroundFPS(Lwjgl3ApplicationConfiguration.getDisplayMode().refreshRate + 1);
         configuration.setWindowedMode(1280, 720);
+        configuration.setWindowSizeLimits(1132, 600, -1, -1);
         configuration.setWindowIcon("images/libgdx128.png", "images/libgdx64.png", "images/libgdx32.png", "images/libgdx16.png");
         configuration.setDecorated(true);
 

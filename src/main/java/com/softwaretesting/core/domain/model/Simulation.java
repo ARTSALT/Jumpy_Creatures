@@ -11,6 +11,7 @@ public class Simulation {
     private final List<Creature> creatures;     // lista de criaturas
     private Iterator<Creature> iterator;        // iterador para percorrer a lista de criaturas
     private final double factor;                // fator de conversão de moedas para a largura do horizonte
+    private static long id = 0;                 // ID único para cada simulação
 
     /**
      * Cria uma nova simulação com o número de criaturas e a largura do horizonte especificados.
@@ -75,6 +76,15 @@ public class Simulation {
         }
     }
 
+    @Override
+    public String toString() {
+        return "Simulation{" +
+            "iterations=" + iterations +
+            ", horizonWidth=" + horizonWidth +
+            ", creatures=" + creatures.size() +
+            '}';
+    }
+
     // getters
     public int getIterations() {
         return iterations;
@@ -102,5 +112,9 @@ public class Simulation {
         creature.setTargetPosition((creature.getPosition() + generateRandom() * creature.getCoins()) * factor);
 
         return creature;
+    }
+
+    public Long getId() {
+        return id++;
     }
 }

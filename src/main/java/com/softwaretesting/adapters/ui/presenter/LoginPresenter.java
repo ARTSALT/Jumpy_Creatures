@@ -2,6 +2,7 @@ package com.softwaretesting.adapters.ui.presenter;
 
 import com.badlogic.gdx.Gdx;
 import com.softwaretesting.adapters.ui.LibGdxApplication;
+import com.softwaretesting.adapters.ui.screen.AdminScreen;
 import com.softwaretesting.adapters.ui.screen.UserScreen;
 import com.softwaretesting.adapters.ui.view.LoginView;
 import com.softwaretesting.adapters.ui.view.View;
@@ -38,11 +39,15 @@ public class LoginPresenter {
             User user = new User(username, password);
             Optional<User> loggedInUser = application.getDatabaseFactory().getUserService().login(user);
 
-            // login bem-sucedido, navega para a tela do usuário
+            // login bem-sucedido, verifica se o usuário é admin ou não
             if (loggedInUser.isPresent()) {
-                loginView.disposeScreen();
-                application.setCurrentUser(loggedInUser.get());
-                application.setScreen(new UserScreen(application));
+                User userL = loggedInUser.get();
+                application.setCurrentUser(userL);
+                if (userL.isAdmin()) {
+                    application.navigateTo(new AdminScreen(application));
+                } else {
+                    application.navigateTo(new UserScreen(application));
+                }
             } else {
                 // se falhar, mostra erro na view
                 loginView.showMessage("Invalid username or password.", View.MessageType.ERROR);

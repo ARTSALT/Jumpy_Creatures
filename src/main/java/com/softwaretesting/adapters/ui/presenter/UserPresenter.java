@@ -29,8 +29,7 @@ public class UserPresenter {
      * Fecha a tela atual do usuário e abre a tela de ranking com todos os usuários.
      */
     public void onRankingButtonClicked() {
-        userView.disposeScreen();
-        application.setScreen(new RankingScreen(application));
+        application.navigateTo(new RankingScreen(application));
     }
 
     /**
@@ -38,8 +37,7 @@ public class UserPresenter {
      * Fecha a tela atual do usuário e abre uma tela para a nova simulação.
      */
     public void onRunNewSimulationClicked() {
-        userView.disposeScreen();
-        application.setScreen(new GameScreen(application));
+        application.navigateTo(new GameScreen(application));
     }
 
     /**
@@ -47,8 +45,7 @@ public class UserPresenter {
      * Fecha a tela atual do usuário e abre a tela de estatísticas, com detalhes específicos da simulação selecionada.
      */
     public void onSimulationClicked(Long id) {
-        userView.disposeScreen();
-        application.setScreen(new StatisticsScreen(application, id));
+        application.navigateTo(new StatisticsScreen(application, id));
     }
 
     /**
@@ -86,13 +83,12 @@ public class UserPresenter {
     }
 
     /**
-     * Metodo chamado quando o usuário pressiona ESC.
+     * Metodo chamado quando o usuário pressiona ESC ou pressiona o botão de logout.
      * Fecha a tela do usuário e retorna para a tela de login, desconectando o usuário atual.
      */
-    public void onEscPressed() {
+    public void onUserLogout() {
         // fecha a tela do usuário e retorna para a tela de login
-        userView.disposeScreen();
         application.setCurrentUser(null);
-        application.setScreen(new LoginScreen(application));
+        application.navigateTo(new LoginScreen(application));
     }
 }

@@ -11,6 +11,8 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.softwaretesting.adapters.ui.LibGdxApplication;
 import com.softwaretesting.adapters.ui.view.View;
@@ -31,6 +33,8 @@ public class ScreenTemplate implements Screen, View {
     protected Stage stage;                      // stage para gerenciar os atores da UI
     protected Table table;                      // tabela para organizar os widgets
     protected Label messageLabel;               // rótulo para exibir feedback ao usuário
+    protected TextButton rankingButton;         // botão para acessar o ranking
+    protected TextButton logoutButton;          // botão para logout
 
     /**
      * Construtor padrão que inicializa os componentes comuns.
@@ -47,13 +51,41 @@ public class ScreenTemplate implements Screen, View {
         messageLabel = new Label("", skin, "font", Color.WHITE);
 
         // cria a stage para a UI
-        Gdx.input.setInputProcessor(stage);
         table = new Table();
         table.setFillParent(true);
         stage.addActor(table);
         stage.addActor(messageLabel);
     }
 
+    /**
+     * Cria o cabeçalho da tela com o título e os botões de navegação.
+     * @param titleText Texto do título a ser exibido no cabeçalho.
+     * @return Uma tabela contendo o cabeçalho configurado.
+     */
+    protected Table createHeader(String titleText) {
+        Table header = new Table();
+        header.setBackground(skin.getDrawable("checkbox"));
+
+        Label title = new Label(titleText, skin, "title", Color.WHITE);
+
+        rankingButton = new TextButton("Ranking", skin);
+        logoutButton = new TextButton("Logout", skin);
+
+        Table buttonGroup = new Table();
+        buttonGroup.add(rankingButton).padRight(10);
+        buttonGroup.add(logoutButton);
+
+        header.add(title).expandX().align(Align.left).pad(15);
+        header.add(buttonGroup).align(Align.right).pad(15);
+
+        return header;
+    }
+
+    /**
+     * Exibe uma mensagem na tela com o tipo especificado.
+     * @param message A mensagem a ser exibida.
+     * @param type O tipo da mensagem (INFO, ERROR, WARNING, SUCCESS).
+     */
     @Override
     public void showMessage(String message, MessageType type) {
         messageLabel.setText(message);
@@ -79,8 +111,13 @@ public class ScreenTemplate implements Screen, View {
     }
 
     @Override
-    public void show() {}
+    public void show() { Gdx.input.setInputProcessor(stage); }
 
+    /**
+     * Renderiza a tela, atualizando o estado da UI e desenhando os componentes.
+     * Este metodo é chamado a cada frame pelo LibGDX.
+     * @param delta Tempo desde o último frame, usado para animações e atualizações.
+     */
     @Override
     public void render(float delta) {
         // limpa a tela
@@ -92,9 +129,19 @@ public class ScreenTemplate implements Screen, View {
         stage.draw();
     }
 
+    /**
+     * Redimensiona a tela quando a janela é redimensionada.
+     * Atualiza o viewport do stage para manter a proporção correta.
+     * @param width Nova largura da tela.
+     * @param height Nova altura da tela.
+     */
     @Override
     public void resize(int width, int height) {
         stage.getViewport().update(width, height, true);
+
+        if (table != null) {
+            table.invalidateHierarchy();
+        }
     }
 
     @Override

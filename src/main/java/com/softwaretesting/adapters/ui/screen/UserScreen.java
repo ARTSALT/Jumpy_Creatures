@@ -32,7 +32,8 @@ public class UserScreen extends ScreenTemplate implements UserView {
     private final Label totalSimsLabel;
     private final Label avgSuccessLabel;
     private final Image avatarImage;
-    private final Table simulationListTable; // tabela interna para a lista de simulações
+    private final Table simulationListTable;    // tabela interna para a lista de simulações
+    private final TextButton runSimButton;      // botão para iniciar uma nova simulação
 
     private final UserPresenter presenter;
 
@@ -42,17 +43,25 @@ public class UserScreen extends ScreenTemplate implements UserView {
         this.presenter = new UserPresenter(this, application);
         User user = application.getCurrentUser(); // obtém o usuário atual da aplicação
 
-        // layout principal de 2 colunas
         table = new Table();
         table.setFillParent(true);
         stage.addActor(table);
+
+        // header
+        Table headerTable = createHeader("User Profile");
+        table.add(headerTable).growX();
+        table.row();
+
+        // layout principal de 2 colunas
+        Table contentTable = new Table();
+        table.add(contentTable).grow();
 
         Table leftColumn = new Table();
         Table rightColumn = new Table();
 
         // define o layout das colunas
-        table.add(leftColumn).width(Value.percentWidth(0.5f, table)).growY().pad(20);
-        table.add(rightColumn).width(Value.percentWidth(0.5f, table)).grow().pad(20);
+        contentTable.add(leftColumn).grow().pad(20);
+        contentTable.add(rightColumn).grow().pad(20);
 
         // =================================================================================================
         // coluna da esquerda
@@ -63,9 +72,7 @@ public class UserScreen extends ScreenTemplate implements UserView {
         totalSimsLabel = new Label("300", skin, "font", Color.BLACK);
         // TODO: adicionar lógica para obter a média de simulações bem-sucedidas do usuário
         avgSuccessLabel = new Label("3", skin, "font", Color.BLACK);
-
-        TextButton rankingButton = new TextButton("View Global Ranking", skin);
-        TextButton runSimButton = new TextButton("Run New Simulation", skin);
+        runSimButton = new TextButton("Run New Simulation", skin);
 
         // caixa de informações do usuário
         Table infoBox = new Table();
@@ -86,8 +93,6 @@ public class UserScreen extends ScreenTemplate implements UserView {
         leftColumn.row();
         leftColumn.add(infoBox).width(475).height(100).padBottom(40);
         leftColumn.row();
-        leftColumn.add(rankingButton).width(250).height(50).padBottom(40);
-        leftColumn.row();
         leftColumn.add(runSimButton).width(250).height(50);
 
         // =================================================================================================
@@ -103,52 +108,7 @@ public class UserScreen extends ScreenTemplate implements UserView {
         rightColumn.row();
         rightColumn.add(scrollPane).grow(); // faz a lista ocupar o espaço restante
 
-        // listener para o pressionamento da tecla ESC
-        stage.addListener(new InputListener() {
-            @Override
-            public boolean keyDown(InputEvent event, int keycode) {
-                if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE) {
-                    presenter.onEscPressed();
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        // adiciona os listeners aos botões
-        rankingButton.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                presenter.onRankingButtonClicked();
-            }
-        });
-
-        // listener para o botão de nova simulação
-        runSimButton.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                presenter.onRunNewSimulationClicked();
-            }
-        });
-
-        avatarImage.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                presenter.onAvatarClicked();
-            }
-
-            @Override
-            public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
-                // mouse hover no avatar, muda o cursor para a "mãozinha"
-                Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Hand);
-            }
-
-            @Override
-            public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
-                // mouse sai do avatar, volta o cursor para a seta padrão
-                Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
-            }
-        });
+        createListeners();
     }
 
     @Override
@@ -208,5 +168,61 @@ public class UserScreen extends ScreenTemplate implements UserView {
                 button("Close");
             }
         }.show(stage);
+    }
+
+    private void createListeners() {
+        // listener para o pressionamento da tecla ESC
+        stage.addListener(new InputListener() {
+            @Override
+            public boolean keyDown(InputEvent event, int keycode) {
+                if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE) {
+                    presenter.onUserLogout();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        rankingButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                presenter.onRankingButtonClicked();
+            }
+        });
+
+        logoutButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                presenter.onUserLogout();
+            }
+        });
+
+        // listener para o botão de nova simulação
+        runSimButton.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                presenter.onRunNewSimulationClicked();
+            }
+        });
+
+        // listener para o clique no avatar
+        avatarImage.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                presenter.onAvatarClicked();
+            }
+
+            @Override
+            public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
+                // mouse hover no avatar, muda o cursor para a "mãozinha"
+                Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Hand);
+            }
+
+            @Override
+            public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
+                // mouse sai do avatar, volta o cursor para a seta padrão
+                Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
+            }
+        });
     }
 }

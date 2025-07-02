@@ -14,6 +14,7 @@ public class User {
     private String password;
     private String avatarUrl;
     private int score;
+    private boolean admin = false;
 
     public User(Long id, String username, String password, String avatarUrl, int score) {
         if (id == null || id < 0) {
@@ -130,5 +131,13 @@ public class User {
 
     public int getTotalSimulations() {
         return 0;
+    }
+
+    public boolean isAdmin() {
+        return admin;
+    }
+
+    public void setAdmin(boolean admin) {
+        this.admin = admin;
     }
 }

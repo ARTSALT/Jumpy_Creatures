@@ -55,6 +55,10 @@ public class UserService {
             User userOpt = userOptional.get();
             // compara a senha fornecida com o hash armazenado
             if (BCrypt.checkpw(user.getPassword(), userOpt.getPassword())) {
+                if (userOpt.getUsername().equals("admin")) {
+                    userOpt.setAdmin(true); // define como admin se for o usuário admin
+                    userOptional = Optional.of(userOpt);
+                }
                 return userOptional;
             }
         }
@@ -81,6 +85,13 @@ public class UserService {
     }
 
     public List<User> getAllUsers() throws SQLException {
-        return userRepository.findAll();
+        return userRepository.findAll()
+            .stream()
+            .peek((user) -> {
+                if (user.getUsername().equals("admin")) {
+                    user.setAdmin(true); // define como admin se for o usuário admin
+                }
+            })
+            .toList();
     }
 }

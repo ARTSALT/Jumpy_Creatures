@@ -2,6 +2,7 @@ package com.softwaretesting.adapters.ui;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -9,6 +10,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.softwaretesting.adapters.persistence.DatabaseFactory;
 import com.softwaretesting.adapters.ui.screen.LoginScreen;
 import com.softwaretesting.core.domain.model.User;
+
+import java.util.Stack;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class LibGdxApplication extends Game {
@@ -22,6 +25,9 @@ public class LibGdxApplication extends Game {
     private ShapeRenderer shapeRenderer;
     private Skin skin;
     private BitmapFont font;
+
+    // pilha para navegação entre telas
+    private final Stack<Screen> navigationStack = new Stack<>();
 
     public LibGdxApplication(DatabaseFactory databaseFactory) {
         this.databaseFactory = databaseFactory;
@@ -40,11 +46,51 @@ public class LibGdxApplication extends Game {
     @Override
     public void dispose() {
         // libera os recursos utilizados
+        while (!navigationStack.isEmpty()) {
+            navigationStack.pop().dispose();
+        }
+        if (getScreen() != null) {
+            getScreen().dispose();
+        }
+
         spriteBatch.dispose();
         shapeRenderer.dispose();
         skin.dispose();
         font.dispose();
         super.dispose();
+    }
+
+    /**
+     * Navega para uma nova tela, empilhando a tela atual no histórico.
+     * @param newScreen A nova instância da tela para a qual navegar.
+     */
+    public void navigateTo(Screen newScreen) {
+        Screen oldScreen = getScreen();
+        if (oldScreen != null) {
+            navigationStack.push(oldScreen);
+        }
+        setScreen(newScreen);
+    }
+
+    /**
+     * Volta para a tela anterior na pilha de navegação.
+     * A tela atual será descartada (dispose).
+     */
+    public void navigateBack() {
+        if (!navigationStack.isEmpty()) {
+            Screen currentScreen = getScreen();
+            Screen previousScreen = navigationStack.pop();
+
+            // libera recursos da tela atual
+            if (currentScreen != null) {
+                currentScreen.dispose();
+            }
+
+            setScreen(previousScreen);
+        } else {
+            // se não houver para onde voltar, fecha a aplicação
+            Gdx.app.exit();
+        }
     }
 
     public SpriteBatch getSpriteBatch() {

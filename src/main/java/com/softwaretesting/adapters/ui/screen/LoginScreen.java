@@ -89,10 +89,10 @@ public class LoginScreen extends ScreenTemplate implements LoginView {
         table.add(titleLabel).colspan(2).padBottom(100);
         table.row();
         table.add(userLabel).right().padRight(10);
-        table.add(userText).width(200).padBottom(10);
+        table.add(userText).width(275).padBottom(10);
         table.row();
         table.add(passwordLabel).right().padRight(10);
-        table.add(passwordText).width(200).padBottom(20);
+        table.add(passwordText).width(275).padBottom(20);
         table.row();
         table.add(loginButton).colspan(2).padTop(20);
         table.row();
