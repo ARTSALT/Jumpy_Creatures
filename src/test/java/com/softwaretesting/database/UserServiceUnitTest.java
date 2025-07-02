@@ -1,5 +1,8 @@
 package com.softwaretesting.database;
 
+import com.softwaretesting.core.application.service.UserService;
+import com.softwaretesting.core.domain.model.User;
+import com.softwaretesting.core.domain.port.driven.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,14 +44,14 @@ public class UserServiceUnitTest {
      */
     @Test
     @DisplayName("Deve registrar um usuário se ele não existir")
-    void shouldRegisterUserIfDoesNotExist() throws SQLException {
+    void shouldRegisterIfDoesNotExist() throws SQLException {
         // simula que o usuário não existe
         when(mockUserRepository.existsByUsername(anyString())).thenReturn(false);
 
         // simula que o salvamento é bem-sucedido
         when(mockUserRepository.save(any(User.class))).thenReturn(true);
 
-        assertThat(userService.registerUser(new User("newuser", "plainpassword"))).isTrue();
+        assertThat(userService.register(new User("newuser", "plainpassword"))).isTrue();
 
         // verifica se existsByUsername foi chamado para o username específico
         verify(mockUserRepository, times(1)).existsByUsername("newuser");
@@ -64,11 +67,11 @@ public class UserServiceUnitTest {
      */
     @Test
     @DisplayName("Não deve registrar um usuário se ele já existir")
-    void shouldNotRegisterUserIfExists() throws SQLException {
+    void shouldNotRegisterIfExists() throws SQLException {
         // simula que o usuário já existe
         when(mockUserRepository.existsByUsername(anyString())).thenReturn(true);
 
-        assertThatThrownBy(() -> userService.registerUser(new User("existinguser", "plainpassword")))
+        assertThatThrownBy(() -> userService.register(new User("existinguser", "plainpassword")))
             .isInstanceOf(IllegalArgumentException.class);
 
         // verifica se existsByUsername foi chamado uma vez
@@ -83,7 +86,7 @@ public class UserServiceUnitTest {
     @DisplayName("MC/DC if (user == null)")
     void shouldNotRegisterNullUser() throws SQLException {
         // simula que o usuário é nulo
-        assertThatThrownBy(() -> userService.registerUser(null))
+        assertThatThrownBy(() -> userService.register(null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("User cannot be null.");
 

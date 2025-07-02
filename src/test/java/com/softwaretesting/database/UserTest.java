@@ -1,5 +1,6 @@
 package com.softwaretesting.database;
 
+import com.softwaretesting.core.domain.model.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

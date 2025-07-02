@@ -1,5 +1,8 @@
 package com.softwaretesting.database;
 
+import com.softwaretesting.adapters.persistence.ConnectionProvider;
+import com.softwaretesting.adapters.persistence.DatabaseFactory;
+import com.softwaretesting.core.application.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

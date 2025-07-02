@@ -1,6 +1,8 @@
 package com.softwaretesting.simulation;
 
-import com.softwaretesting.simulation.entity.Creature;
+import com.softwaretesting.core.domain.model.Simulation;
+import com.softwaretesting.core.domain.model.Creature;
+import com.softwaretesting.core.domain.model.RandomProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -1,5 +1,9 @@
 package com.softwaretesting.database;
 
+import com.softwaretesting.adapters.persistence.DatabaseFactory;
+import com.softwaretesting.adapters.persistence.H2ConnectionProvider;
+import com.softwaretesting.core.application.service.UserService;
+import com.softwaretesting.core.domain.model.User;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -52,7 +56,7 @@ public class UserServiceIntegrationTest {
     void shouldRegisterNewUserSuccessfully() throws SQLException {
         User user = new User("testUser", "validPassword123");
 
-        boolean result = userService.registerUser(user);
+        boolean result = userService.register(user);
         boolean exists = userService.userExists(user);
 
         assertThat(result).isTrue();
@@ -63,10 +67,10 @@ public class UserServiceIntegrationTest {
     @DisplayName("Deve impedir o registro de um usuário com o mesmo username")
     void shouldPreventRegisteringExistingUser() throws SQLException {
         User user = new User("existingUser", "anyPassword123");
-        userService.registerUser(user); // registra o usuário pela primeira vez
+        userService.register(user); // registra o usuário pela primeira vez
 
         // tenta registrar o mesmo usuário novamente
-        assertThatThrownBy(() -> userService.registerUser(user))
+        assertThatThrownBy(() -> userService.register(user))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Username already exists.");
     }
@@ -75,7 +79,7 @@ public class UserServiceIntegrationTest {
     @DisplayName("Deve permitir o login de um usuário registrado com a senha correta")
     void shouldAllowLoginForRegisteredUserWithCorrectPassword() throws SQLException {
         User userToRegister = new User("testUser", "correctPassword123");
-        userService.registerUser(userToRegister);
+        userService.register(userToRegister);
 
         User userToLogin = new User("testUser", "correctPassword123");
 
@@ -89,7 +93,7 @@ public class UserServiceIntegrationTest {
     @DisplayName("Não deve permitir o login com uma senha incorreta")
     void shouldNotAllowLoginWithIncorrectPassword() throws SQLException {
         User userToRegister = new User("testUser", "correctPassword123");
-        userService.registerUser(userToRegister);
+        userService.register(userToRegister);
 
         User userToLogin = new User("testUser", "WRONG_Password123");
 

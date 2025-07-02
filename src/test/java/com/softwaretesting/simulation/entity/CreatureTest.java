@@ -1,5 +1,6 @@
 package com.softwaretesting.simulation.entity;
 
+import com.softwaretesting.core.domain.model.Creature;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

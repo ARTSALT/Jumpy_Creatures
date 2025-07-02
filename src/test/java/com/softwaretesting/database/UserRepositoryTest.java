@@ -1,5 +1,7 @@
 package com.softwaretesting.database;
 
+import com.softwaretesting.adapters.persistence.UserRepositoryImpl;
+import com.softwaretesting.core.domain.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
