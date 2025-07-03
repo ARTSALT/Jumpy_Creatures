@@ -228,7 +228,7 @@ public class Zombie {
         return sprite;
     }
 
-    public Rectangle getZombieRectangle() {
+    public Rectangle getRectangle() {
         zombieRectangle.setPosition(sprite.getX() + 100f, sprite.getY() + 40f);
         zombieRectangle.setSize(sprite.getWidth() * 0.4f, sprite.getHeight() * 0.8f);
         return zombieRectangle;

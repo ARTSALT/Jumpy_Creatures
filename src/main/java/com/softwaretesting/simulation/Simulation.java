@@ -1,6 +1,7 @@
 package com.softwaretesting.simulation;
 
 import com.softwaretesting.simulation.entity.Creature;
+import com.softwaretesting.simulation.entity.Guardian;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,13 +38,14 @@ public class Simulation {
         this.randomProvider = randomProvider;
         this.horizonWidth = horizonWidth;
         this.factor = horizonWidth / 1000000.0;
-        this.creatures = new ArrayList<>(numCreatures);
+        this.creatures = new ArrayList<>(numCreatures + 1);
 
         // gera 'numCreatures' criaturas
         for (int i = 0; i < numCreatures; i++) {
             // cria uma nova criatura com 1000000 moedas e posição inicial na metade da largura do horizonte
             creatures.add(new Creature(1000000, horizonWidth / 2f));
         }
+        this.creatures.add(new Guardian(0, horizonWidth / 2f)); // adiciona o guardião
 
         iterator = creatures.iterator();
     }

@@ -8,7 +8,7 @@ package com.softwaretesting.simulation.entity;
 public class Creature {
 
     // moedas e posição da criatura
-    private int coins;
+    int coins;
     private double position;
     private double targetPosition;
 

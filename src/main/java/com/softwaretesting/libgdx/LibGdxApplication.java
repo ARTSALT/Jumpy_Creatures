@@ -24,6 +24,7 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.softwaretesting.simulation.Simulation;
 import com.softwaretesting.simulation.entity.Creature;
+import com.softwaretesting.simulation.entity.Guardian;
 
 import java.util.Random;
 
@@ -242,13 +243,24 @@ public class LibGdxApplication extends ApplicationAdapter {
             int mouseY = Gdx.input.getY();
             Vector3 worldCoords = gameViewport.unproject(new Vector3(mouseX, mouseY, 0));
 
-            for (Creature c : simulation.getCreatures()) {
-                Zombie zombie = new Zombie(c);
+            for (int i = 0; i < simulation.getCreatures().size(); i++) {
+                if (simulation.getCreatures().get(i) instanceof Guardian) {
+                    // cria um novo guardião a partir da ũltima criatura
+                    HorizonGuardian guardian = new HorizonGuardian((Guardian) simulation.getCreatures().get(i));
 
-                // verifica se o retângulo do zumbi contém as coordenadas do mouse
-                if (zombie.getZombieRectangle().contains(worldCoords.x, worldCoords.y)) {
-                    selectedZombie = zombie;
-                    break;
+                    if (guardian.getRectangle().contains(worldCoords.x, worldCoords.y)) {
+                        selectedZombie = guardian;
+                        break;
+                    }
+                } else {
+                    // cria um novo zumbi a partir da criatura
+                    Zombie zombie = new Zombie(simulation.getCreatures().get(i));
+
+                    // verifica se o retângulo do zumbi contém as coordenadas do mouse
+                    if (zombie.getRectangle().contains(worldCoords.x, worldCoords.y)) {
+                        selectedZombie = zombie;
+                        break;
+                    }
                 }
             }
         }
@@ -259,6 +271,7 @@ public class LibGdxApplication extends ApplicationAdapter {
             int mouseY = Gdx.input.getY();
             Vector3 worldCoords = uiViewport.unproject(new Vector3(mouseX, mouseY, 0));
 
+            // TODO Adapt to guardian inclusion
             if (playButtonBounds.contains(worldCoords.x, worldCoords.y)
                 || enterPressed) {
                 String input = nameInput.getText();
@@ -268,8 +281,9 @@ public class LibGdxApplication extends ApplicationAdapter {
                     System.out.println("Número de zumbis: " + numZumbis);
 
                     // inicializa a simulação com o número de zumbis
-                    simulation = new Simulation(numZumbis, 1, (int) gameViewport.getWorldWidth(),
+                    simulation = new Simulation(numZumbis + 1, 1, (int) gameViewport.getWorldWidth(),
                         (max, min) -> new Random().nextDouble() * (max - min) + min);
+
                     currentZombie = new Zombie(simulation.process());
                     //currentZombie.reset();
                 } catch (Exception e) {
@@ -378,10 +392,10 @@ public class LibGdxApplication extends ApplicationAdapter {
             shapeRenderer.setProjectionMatrix(gameViewport.getCamera().combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
             shapeRenderer.setColor(Color.RED);
-            shapeRenderer.rect(selectedZombie.getZombieRectangle().x,
-                selectedZombie.getZombieRectangle().y,
-                selectedZombie.getZombieRectangle().width,
-                selectedZombie.getZombieRectangle().height);
+            shapeRenderer.rect(selectedZombie.getRectangle().x,
+                selectedZombie.getRectangle().y,
+                selectedZombie.getRectangle().width,
+                selectedZombie.getRectangle().height);
             shapeRenderer.end();
 
             spriteBatch.begin();
@@ -407,7 +421,7 @@ public class LibGdxApplication extends ApplicationAdapter {
 
     // Metodo auxiliar para verificar se um zumbi está fora dos limites
     private boolean isOutOfBounds(Zombie creature) {
-        Rectangle zombieRect = creature.getZombieRectangle();
+        Rectangle zombieRect = creature.getRectangle();
         Rectangle viewportBounds = new Rectangle(
             gameViewport.getCamera().position.x - (gameViewport.getWorldWidth() * cameraZoom) / 2,
             gameViewport.getCamera().position.y - (gameViewport.getWorldHeight() * cameraZoom) / 2,
