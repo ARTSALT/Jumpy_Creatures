@@ -30,8 +30,9 @@ public class RankingScreen extends ScreenTemplate implements RankingView {
 
         // cabeçalho principal
         Table screenHeader = createHeader("Ranking");
-        Table buttonGroup = (Table) screenHeader.getChild(1);
-        buttonGroup.removeActor(rankingButton);
+
+        // muda o botão de ranking conforme o usuário logado
+        rankingButton.setLabel(new Label(presenter.getUserButton(), skin, "font", Color.WHITE));
         table.add(screenHeader).growX();
         table.row();
 
@@ -154,6 +155,18 @@ public class RankingScreen extends ScreenTemplate implements RankingView {
                     return true;
                 }
                 return false;
+            }
+        });
+
+        rankingButton.addListener(new InputListener() {
+            @Override
+            public boolean touchDown(InputEvent event, float x, float y, int pointer, int button) {
+                if (application.getCurrentUser().isAdmin()) {
+                    application.navigateTo(new AdminScreen(application));
+                } else {
+                    application.navigateTo(new UserScreen(application));
+                }
+                return true;
             }
         });
 

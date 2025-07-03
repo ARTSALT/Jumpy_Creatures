@@ -58,6 +58,11 @@ public class RankingPresenter {
         rankingView.displayTotalAverageScore(75.5);
     }
 
+    public String getUserButton() {
+        // retorna texto do botão conforme o tipo de usuário logado
+        return application.getCurrentUser().isAdmin() ? "Admin Panel" : "User Profile";
+    }
+
     public void onUserLogout() {
         application.setCurrentUser(null);
         application.navigateTo(new LoginScreen(application));
