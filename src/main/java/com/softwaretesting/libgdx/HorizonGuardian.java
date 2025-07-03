@@ -1,17 +1,8 @@
 package com.softwaretesting.libgdx;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.audio.Sound;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.softwaretesting.simulation.entity.Creature;
 import com.softwaretesting.simulation.entity.Guardian;
-import com.softwaretesting.simulation.entity.ParabolicMovement;
-
-import java.util.Arrays;
 
 public class HorizonGuardian extends Zombie{
     /**
@@ -44,6 +35,4 @@ public class HorizonGuardian extends Zombie{
         // Checa se o ponto central da base do zumbi está dentro do retângulo deste guardião
         return thisRect.contains(otherBaseCenter);
     }
-
-
 }

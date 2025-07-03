@@ -52,7 +52,7 @@ class CreatureTest {
             Creature thief = new Creature(10, 0);
             Creature victim = new Creature(100, 50); // Quantidade par
 
-            int stolenCoins = thief.stealFrom(victim);
+            int stolenCoins = thief.halveCoins();
 
             assertThat(stolenCoins).isEqualTo(50);
             assertThat(thief.getCoins()).isEqualTo(10 + 50); // Ladrão ganha 50
@@ -66,7 +66,7 @@ class CreatureTest {
             Creature victim = new Creature(101, 50); // Quantidade ímpar
 
             // 101 / 2 = 50 (divisão inteira). A vítima perde 50
-            int stolenCoins = thief.stealFrom(victim);
+            int stolenCoins = thief.halveCoins();
 
             assertThat(stolenCoins).isEqualTo(50);
             assertThat(thief.getCoins()).isEqualTo(10 + 50); // Ladrão ganha 50
@@ -82,7 +82,7 @@ class CreatureTest {
             Creature thief = new Creature(10, 0);
             Creature victim = new Creature(victimInitialCoins, 50);
 
-            int stolenCoins = thief.stealFrom(victim);
+            int stolenCoins = thief.halveCoins();
 
             assertThat(stolenCoins).isEqualTo(expectedStolen);
             assertThat(thief.getCoins()).isEqualTo(10 + expectedStolen);
@@ -96,7 +96,7 @@ class CreatureTest {
 
             // halveCoins() -> coins = 50, retorna 50
             // this.coins += 50 -> coins = 50 + 50 = 100
-            int stolenCoins = creature.stealFrom(creature);
+            int stolenCoins = creature.halveCoins();
 
             assertThat(stolenCoins).isEqualTo(50);
             assertThat(creature.getCoins()).isEqualTo(100);

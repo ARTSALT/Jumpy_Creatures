@@ -210,7 +210,7 @@ public class Zombie {
     }
 
     public void steal(Zombie otherZombie) {
-        int stolenCoins = this.creature.stealFrom(otherZombie.getCreature());
+        int stolenCoins = this.creature.halveCoins();
 
         this.setStatusText("+" + stolenCoins, Color.GREEN);
         otherZombie.setStatusText("-" + stolenCoins, Color.RED);

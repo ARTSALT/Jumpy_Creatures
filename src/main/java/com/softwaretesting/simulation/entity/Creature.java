@@ -8,9 +8,9 @@ package com.softwaretesting.simulation.entity;
 public class Creature {
 
     // moedas e posição da criatura
-    int coins;
-    private double position;
-    private double targetPosition;
+    protected int coins;
+    protected double position;
+    protected double targetPosition;
 
     /**
      * Cria uma nova criatura com a quantidade de moedas e a posição inicial especificadas.
@@ -21,7 +21,6 @@ public class Creature {
         if (coins < 0) {
             throw new IllegalArgumentException("A quantidade de moedas não pode ser negativa.");
         }
-
         this.coins = coins;
         this.position = initialPosition;
         this.targetPosition = initialPosition;
@@ -35,26 +34,26 @@ public class Creature {
     }
 
     /**
-     * Reduz as moedas da criatura pela metade e retorna a quantidade removida.
+     * Reduz as moedas da criatura pela metade e adiciona a quantidade roubada.
      * @return O número de moedas que foram roubadas.
      */
-    int halveCoins() {
+    public int halveCoins() {
         int half = coins / 2;
         coins -= half;
         return half;
     }
 
     /**
-     * Rouba metade das moedas de outra criatura.
-     * @param otherCreature A criatura da qual roubar.
-     * @return O número de moedas roubadas.
+     * Adiciona uma quantidade de moedas à criatura.
+     * @param amount A quantidade a ser adicionada.
      */
-    public int stealFrom(Creature otherCreature) {
-        int stolenCoins = otherCreature.halveCoins();
-        this.coins += stolenCoins;
-        return stolenCoins;
+    public void addCoins(int amount) {
+        if (amount > 0) {
+            this.coins += amount;
+        }
     }
 
+    // getters e setters
     public int getCoins() {
         return coins;
     }
@@ -73,5 +72,12 @@ public class Creature {
 
     public void setTargetPosition(double targetPosition) {
         this.targetPosition = targetPosition;
+    }
+
+    @Override
+    public String toString() {
+        String type = this.getClass().getSimpleName();
+        if(type.isEmpty()) type = "Creature";
+        return String.format("%s{moedas=%d, posicao=%.2f}", type, coins, position);
     }
 }

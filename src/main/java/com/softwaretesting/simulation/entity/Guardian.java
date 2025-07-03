@@ -1,25 +1,24 @@
 package com.softwaretesting.simulation.entity;
 
-import com.softwaretesting.simulation.entity.Creature;
-
-public class Guardian extends Creature{
+/**
+ * Representa um Guardião no ambiente da simulação.
+ * O Guardião é uma criatura especial que pode absorver moedas de clusters e eliminá-los.
+ */
+public class Guardian extends Creature {
 
     /**
-     * Cria uma nova criatura com a quantidade de moedas e a posição inicial especificadas.
-     *
-     * @param coins           A quantidade de moedas da criatura, não pode ser negativa.
+     * Cria um novo Guardião com a quantidade de moedas e a posição inicial especificadas.
      * @param initialPosition A posição inicial da criatura.
      */
-    public Guardian(int coins, double initialPosition) {
-        super(coins, initialPosition);
+    public Guardian(double initialPosition) {
+        super(0, initialPosition);
     }
 
     /**
-     * Rouba todas as moedas de um cluster de criaturas.
+     * Absorve todas as moedas de um cluster, efetivamente eliminando-o.
+     * @param cluster O cluster a ser absorvido.
      */
-    public int killCluster(Creature otherCreature) {
-        this.coins += otherCreature.getCoins();
-        otherCreature.setCoins(0);
-        return this.coins;
+    public void absorbCluster(Cluster cluster) {
+        this.addCoins(cluster.getCoins());
     }
 }

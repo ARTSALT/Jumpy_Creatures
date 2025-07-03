@@ -280,10 +280,9 @@ public class LibGdxApplication extends ApplicationAdapter {
                     System.out.println("Número de zumbis: " + numZumbis);
 
                     // inicializa a simulação com o número de zumbis
-                    simulation = new Simulation(numZumbis + 1, 1, (int) gameViewport.getWorldWidth(),
-                        (max, min) -> new Random().nextDouble() * (max - min) + min);
 
-                    currentZombie = new Zombie(simulation.process());
+
+                    //currentZombie = new Zombie(simulation.process());
                     //currentZombie.reset();
                 } catch (Exception e) {
                     System.err.println("Erro na caixa de entrada: " + e.getMessage());
@@ -294,7 +293,7 @@ public class LibGdxApplication extends ApplicationAdapter {
         // processa o próximo zumbi
         if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
             if (simulation != null && currentZombie.finishedProcessing()) {
-                currentZombie = new Zombie(simulation.process());
+                //currentZombie = new Zombie(simulation.process());
                 //currentZombie.reset();
             }
         }
@@ -330,7 +329,7 @@ public class LibGdxApplication extends ApplicationAdapter {
                     currentZombie.steal(closestZombie);
                 }
 
-                currentZombie = new Zombie(simulation.process());
+                //currentZombie = new Zombie(simulation.process());
                 //currentZombie.reset();
             }
         }
