@@ -8,11 +8,14 @@ import com.softwaretesting.adapters.ui.screen.LoginScreen;
 import com.softwaretesting.adapters.ui.screen.RankingScreen;
 import com.softwaretesting.adapters.ui.screen.StatisticsScreen;
 import com.softwaretesting.adapters.ui.view.UserView;
+import com.softwaretesting.core.application.service.SimulationService;
+import com.softwaretesting.core.domain.model.Simulation;
 import com.softwaretesting.core.domain.model.User;
 
 import java.awt.*;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 
 public class UserPresenter {
 
@@ -22,6 +25,39 @@ public class UserPresenter {
     public UserPresenter(UserView userView, LibGdxApplication application) {
         this.userView = userView;
         this.application = application;
+    }
+
+    /**
+     * Carrega as informações do usuário logado e as simulações realizadas.
+     * Obtém o usuário atual, suas simulações e calcula a média de sucesso.
+     * Exibe as informações na tela do usuário.
+     */
+    public void loadUserInfo() {
+        try {
+            // usuário logado
+            User user = application.getCurrentUser();
+            // serviço das simulações
+            SimulationService simulationService = application.getDatabaseFactory().getSimulationService();
+
+            // obtém a lista de todas as simulações e as simulações bem-sucedidas do usuário
+            List<Simulation> allSims = simulationService.getSimulations(user);
+            List<Simulation> successfulSims = simulationService.getSuccessfulSimulations(user);
+
+            double avgSuccess = 0.0;
+            int allSimsCount = 0;
+            if (allSims != null && !allSims.isEmpty()) {
+                allSimsCount = allSims.size();
+                if (successfulSims != null && !successfulSims.isEmpty()) {
+                    avgSuccess = successfulSims.size() / (double) allSims.size();
+                }
+            }
+
+            userView.displayUserInfo(user.getUsername(), user.getScore(), allSimsCount);
+            userView.setUserProfileImage(user.getAvatarUrl());
+            userView.setAverageSuccessRate(avgSuccess);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error fetching successful simulations", e);
+        }
     }
 
     /**
@@ -76,7 +112,7 @@ public class UserPresenter {
                 } catch (IOException e) {
                     throw new RuntimeException("Error reading avatar file", e);
                 }
-                userView.displayUserInfo(currentUser);
+                userView.setUserProfileImage(fileHandle.path());
             });
         }
         parent.dispose();

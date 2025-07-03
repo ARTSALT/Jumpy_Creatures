@@ -16,7 +16,6 @@ import com.softwaretesting.adapters.ui.LibGdxApplication;
 import com.softwaretesting.adapters.ui.dto.SimulationSummaryDTO;
 import com.softwaretesting.adapters.ui.presenter.UserPresenter;
 import com.softwaretesting.adapters.ui.view.UserView;
-import com.softwaretesting.core.domain.model.User;
 
 import java.util.List;
 
@@ -41,7 +40,6 @@ public class UserScreen extends ScreenTemplate implements UserView {
         super(application);
 
         this.presenter = new UserPresenter(this, application);
-        User user = application.getCurrentUser(); // obtém o usuário atual da aplicação
 
         table = new Table();
         table.setFillParent(true);
@@ -65,13 +63,11 @@ public class UserScreen extends ScreenTemplate implements UserView {
 
         // =================================================================================================
         // coluna da esquerda
-        avatarImage = new Image(new Texture(user.getAvatarUrl()));
-        usernameLabel = new Label(user.getUsername(), skin, "title", Color.WHITE);
-        scoreLabel = new Label(String.valueOf(user.getScore()), skin, "font", Color.BLACK);
-        // TODO: adicionar lógica para obter o total de simulações do usuário
-        totalSimsLabel = new Label("300", skin, "font", Color.BLACK);
-        // TODO: adicionar lógica para obter a média de simulações bem-sucedidas do usuário
-        avgSuccessLabel = new Label("3", skin, "font", Color.BLACK);
+        avatarImage = new Image();
+        usernameLabel = new Label("", skin, "title", Color.WHITE);
+        scoreLabel = new Label("", skin, "font", Color.BLACK);
+        totalSimsLabel = new Label("", skin, "font", Color.BLACK);
+        avgSuccessLabel = new Label("", skin, "font", Color.BLACK);
         runSimButton = new TextButton("Run New Simulation", skin);
 
         // caixa de informações do usuário
@@ -106,18 +102,28 @@ public class UserScreen extends ScreenTemplate implements UserView {
 
         rightColumn.add(simOverviewLabel).align(Align.left).padBottom(20);
         rightColumn.row();
-        rightColumn.add(scrollPane).grow(); // faz a lista ocupar o espaço restante
+        rightColumn.add(scrollPane).grow(); // faz a lista ocupar o espaço restante'
 
         createListeners();
+
+        presenter.loadUserInfo();
     }
 
     @Override
-    public void displayUserInfo(User user) {
-        usernameLabel.setText(user.getUsername());
-        scoreLabel.setText(String.valueOf(user.getScore()));
-        avatarImage.setDrawable(new TextureRegionDrawable(new Texture(user.getAvatarUrl())));
-        totalSimsLabel.setText("Total simulations executed: " + user.getTotalSimulations());
-        avgSuccessLabel.setText("Average of successful simulations: " + String.format("%.2f%%", 2.0 * 100));
+    public void displayUserInfo(String username, int score, int numSimulations) {
+        usernameLabel.setText(username);
+        scoreLabel.setText(score);
+        totalSimsLabel.setText(numSimulations);
+    }
+
+    @Override
+    public void setUserProfileImage(String path) {
+        avatarImage.setDrawable(new TextureRegionDrawable(new Texture(path)));
+    }
+
+    @Override
+    public void setAverageSuccessRate(double avg) {
+        avgSuccessLabel.setText(String.format("%.2f%%", avg));
     }
 
     @Override
@@ -139,7 +145,7 @@ public class UserScreen extends ScreenTemplate implements UserView {
         card.pad(15);
         card.align(Align.left);
 
-        card.add(new Label(simulationDTO.description(), skin, "title"))
+        card.add(new Label(simulationDTO.name(), skin, "title"))
             .colspan(2).align(Align.left).padBottom(10);
         card.row();
         card.add(new Label("Date: " + simulationDTO.date(), skin)).align(Align.left);

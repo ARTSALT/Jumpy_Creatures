@@ -1,15 +1,18 @@
 package com.softwaretesting.core.domain.model;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Classe que representa um usuário no sistema.
  * Contém informações como ID, nome de usuário, senha, URL do avatar e pontuação.
+ * Cada usuário possui uma lista de simulações que ele criou.
  */
 public class User {
     public static String DEFAULT_AVATAR_URL = "images/default_avatar.png";
 
-    private final Long id;
+    private Long id;
     private String username;
     private String password;
     private String avatarUrl;
@@ -29,7 +32,6 @@ public class User {
     }
 
     public User(String username, String password) {
-        this.id = 0L;
         setUsername(username);
         setPassword(password);
         setAvatarUrl(DEFAULT_AVATAR_URL);
@@ -99,6 +101,14 @@ public class User {
         this.score = score;
     }
 
+    public boolean isAdmin() {
+        return admin;
+    }
+
+    public void setAdmin(boolean admin) {
+        this.admin = admin;
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -127,17 +137,5 @@ public class User {
         result = 31 * result + avatarUrl.hashCode();
         result = 31 * result + score;
         return result;
-    }
-
-    public int getTotalSimulations() {
-        return 0;
-    }
-
-    public boolean isAdmin() {
-        return admin;
-    }
-
-    public void setAdmin(boolean admin) {
-        this.admin = admin;
     }
 }

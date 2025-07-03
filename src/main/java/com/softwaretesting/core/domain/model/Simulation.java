@@ -1,17 +1,38 @@
 package com.softwaretesting.core.domain.model;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 public class Simulation {
+
     private final RandomProvider randomProvider;
+    private String name;                        // nome da simulação
     private int iterations;                     // número de iterações
     private final int horizonWidth;             // largura do horizonte
     private final List<Creature> creatures;     // lista de criaturas
     private Iterator<Creature> iterator;        // iterador para percorrer a lista de criaturas
     private final double factor;                // fator de conversão de moedas para a largura do horizonte
-    private static long id = 0;                 // ID único para cada simulação
+    private Long id;                            // ID único para cada simulação
+    private User user;                          // usuário que criou a simulação
+    private boolean isSuccessful;               // indica se a simulação foi bem-sucedida
+    private LocalDateTime createdAt;            // data de criação da simulação
+
+    /**
+     * Construtor com todos os parâmetros.
+     */
+    public Simulation(RandomProvider randomProvider, int horizonWidth, List<Creature> creatures, double factor,
+                      Long id, int iterations) {
+        this.randomProvider = randomProvider;
+        this.horizonWidth = horizonWidth;
+        this.creatures = creatures;
+        this.factor = factor;
+        this.id = id;
+        this.iterations = iterations;
+        this.iterator = creatures.iterator();
+    }
 
     /**
      * Cria uma nova simulação com o número de criaturas e a largura do horizonte especificados.
@@ -45,6 +66,14 @@ public class Simulation {
         }
 
         iterator = creatures.iterator();
+    }
+
+    /**
+     * Construtor com o número de criaturas, iterações e largura do horizonte.
+     * Utiliza um provedor de números aleatórios padrão que gera números entre -1 e 1.
+     */
+    public Simulation(int numCreatures, int iterations, int horizonWidth) {
+        this(numCreatures, iterations, horizonWidth, (min, max) -> Math.random() * (max - min) + min);
     }
 
     // processa todas as criaturas de uma vez
@@ -115,6 +144,40 @@ public class Simulation {
     }
 
     public Long getId() {
-        return id++;
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public boolean isSuccessful() {
+        return isSuccessful;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("Usuário não pode ser nulo.");
+        }
+        this.user = user;
+    }
+
+    public Timestamp getCreatedAt() {
+        return createdAt == null ? null : Timestamp.valueOf(createdAt);
+    }
+
+    public void setCreatedAt(LocalDateTime localDateTime) {
+        if (localDateTime == null) {
+            throw new IllegalArgumentException("Data de criação não pode ser nula.");
+        }
+        this.createdAt = localDateTime;
+    }
+
+    public String getName() {
+        return name;
     }
 }

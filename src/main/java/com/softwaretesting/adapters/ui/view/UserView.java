@@ -1,7 +1,6 @@
 package com.softwaretesting.adapters.ui.view;
 
 import com.softwaretesting.adapters.ui.dto.SimulationSummaryDTO;
-import com.softwaretesting.core.domain.model.User;
 
 import java.util.List;
 
@@ -16,10 +15,18 @@ public interface UserView extends View {
     /**
      * Exibe as informações básicas do usuário na tela, como nome, avatar e pontuação.
      * Chamado pelo Presenter após o carregamento inicial dos dados.
-     *
-     * @param user O objeto usuário contendo as informações a serem exibidas.
      */
-    void displayUserInfo(User user);
+    void displayUserInfo(String username, int score, int numSimulations);
+
+    /**
+     * Define a imagem do perfil do usuário na UI.
+     */
+    void setUserProfileImage(String path);
+
+    /**
+     * Define a média de sucesso das simulações do usuário.
+     */
+    void setAverageSuccessRate(double avg);
 
     /**
      * Preenche a lista de simulações do usuário na UI.
