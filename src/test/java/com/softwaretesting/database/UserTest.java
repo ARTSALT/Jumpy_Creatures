@@ -26,7 +26,7 @@ public class UserTest {
     public void testUserCreationWithUsernameAndPassword() {
         User user = new User("testuser", "password123");
 
-        assertThat(user.getId()).isEqualTo(0L);
+        assertThat(user.getId()).isEqualTo(null);
         assertThat(user.getUsername()).isEqualTo("testuser");
         assertThat(user.getPassword()).isEqualTo("password123");
         assertThat(user.getAvatarUrl()).isEqualTo(User.DEFAULT_AVATAR_URL);

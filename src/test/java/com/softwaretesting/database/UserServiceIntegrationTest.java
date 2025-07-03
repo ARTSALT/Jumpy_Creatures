@@ -54,7 +54,7 @@ public class UserServiceIntegrationTest {
     @Test
     @DisplayName("Deve registrar um novo usuário com sucesso")
     void shouldRegisterNewUserSuccessfully() throws SQLException {
-        User user = new User("testUser", "validPassword123");
+        User user = new User("testUser4", "validPassword1234");
 
         boolean result = userService.register(user);
         boolean exists = userService.userExists(user);
@@ -92,7 +92,7 @@ public class UserServiceIntegrationTest {
     @Test
     @DisplayName("Não deve permitir o login com uma senha incorreta")
     void shouldNotAllowLoginWithIncorrectPassword() throws SQLException {
-        User userToRegister = new User("testUser", "correctPassword123");
+        User userToRegister = new User("testUser5", "correctPassword12345");
         userService.register(userToRegister);
 
         User userToLogin = new User("testUser", "WRONG_Password123");

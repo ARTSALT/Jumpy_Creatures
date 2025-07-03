@@ -61,43 +61,47 @@ class H2ConnectionProviderTest {
             H2ConnectionProvider provider = H2ConnectionProvider.builder().build();
 
             assertThat(provider)
-                .extracting("url", "user", "password", "scriptFile")
-                .containsExactly("jdbc:h2:./testdb", "sa", "", "database/schema.sql");
+                    .extracting("url", "user", "password", "scriptFile")
+                    // CORREÇÃO: A URL padrão agora é outra, devido à nova lógica do builder.
+                    .containsExactly("jdbc:h2:./data/usersdb;DB_CLOSE_DELAY=-1", "sa", "", "database/schema.sql");
         }
 
         @Test
         @DisplayName("Deve construir com banco em memória quando useInMemory(true) é chamado")
         void buildWithUseInMemoryTrue() {
-            H2ConnectionProvider provider = H2ConnectionProvider.builder().useInMemory(true).build();
+            // CORREÇÃO: Adicionado .database("testdb") para que a URL seja construída
+            // com o nome de banco de dados esperado pelo teste.
+            H2ConnectionProvider provider = H2ConnectionProvider.builder().database("testdb").useInMemory(true).build();
 
             assertThat(provider)
-                .extracting("url")
-                .isEqualTo("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1");
+                    .extracting("url")
+                    .isEqualTo("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1");
         }
 
         @Test
         @DisplayName("Deve construir com banco persistente quando useInMemory(false) é chamado")
         void buildWithUseInMemoryFalse() {
-            H2ConnectionProvider provider = H2ConnectionProvider.builder().useInMemory(false).build();
+            // CORREÇÃO: Adicionado .database("testdb") e corrigida a URL esperada.
+            H2ConnectionProvider provider = H2ConnectionProvider.builder().database("testdb").useInMemory(false).build();
 
             assertThat(provider)
-                .extracting("url")
-                .isEqualTo("jdbc:h2:./testdb");
+                    .extracting("url")
+                    .isEqualTo("jdbc:h2:./data/testdb;DB_CLOSE_DELAY=-1");
         }
 
         @Test
         @DisplayName("Deve sobrescrever valores padrão com dados customizados")
         void buildWithCustomValues() {
             H2ConnectionProvider provider = H2ConnectionProvider.builder()
-                .url("jdbc:h2:mem:customdb")
-                .user("testuser")
-                .password("testpass")
-                .scriptFile("custom/script.sql")
-                .build();
+                    .url("jdbc:h2:mem:customdb")
+                    .user("testuser")
+                    .password("testpass")
+                    .scriptFile("custom/script.sql")
+                    .build();
 
             assertThat(provider)
-                .extracting("url", "user", "password", "scriptFile")
-                .containsExactly("jdbc:h2:mem:customdb", "testuser", "testpass", "custom/script.sql");
+                    .extracting("url", "user", "password", "scriptFile")
+                    .containsExactly("jdbc:h2:mem:customdb", "testuser", "testpass", "custom/script.sql");
         }
 
         // MC/DC para a condição: if (url == null || url.isEmpty()) no build()
@@ -106,7 +110,8 @@ class H2ConnectionProviderTest {
         void buildWhenUrlIsNull() {
             // Caso 1: C1=true, C2=X -> Resultado=true
             H2ConnectionProvider provider = H2ConnectionProvider.builder().url(null).build();
-            assertThat(provider).extracting("url").isEqualTo("jdbc:h2:./testdb");
+            // CORREÇÃO: A URL padrão foi alterada.
+            assertThat(provider).extracting("url").isEqualTo("jdbc:h2:./data/usersdb;DB_CLOSE_DELAY=-1");
         }
 
         @Test
@@ -114,7 +119,8 @@ class H2ConnectionProviderTest {
         void build_whenUrlIsEmpty() {
             // Caso 2: C1=false, C2=true -> Resultado=true
             H2ConnectionProvider provider = H2ConnectionProvider.builder().url("").build();
-            assertThat(provider).extracting("url").isEqualTo("jdbc:h2:./testdb");
+            // CORREÇÃO: A URL padrão foi alterada.
+            assertThat(provider).extracting("url").isEqualTo("jdbc:h2:./data/usersdb;DB_CLOSE_DELAY=-1");
         }
 
         @Test
@@ -141,14 +147,15 @@ class H2ConnectionProviderTest {
             // Caso 1: C1=true, C2=X -> Resultado=true
             H2ConnectionProvider provider = H2ConnectionProvider.builder().build();
             driverManagerMockedStatic.when(() -> DriverManager.getConnection(anyString(), anyString(), anyString()))
-                .thenReturn(mockConnection);
+                    .thenReturn(mockConnection);
 
             Connection conn = provider.getConnection();
 
             assertThat(conn).isSameAs(mockConnection);
+            // CORREÇÃO: A URL padrão usada pelo builder() foi atualizada.
             driverManagerMockedStatic.verify(
-                () -> DriverManager.getConnection("jdbc:h2:./testdb", "sa", ""),
-                times(1));
+                    () -> DriverManager.getConnection("jdbc:h2:./data/usersdb;DB_CLOSE_DELAY=-1", "sa", ""),
+                    times(1));
         }
 
         @Test
@@ -157,7 +164,7 @@ class H2ConnectionProviderTest {
             // Caso 2: C1=false, C2=true -> Resultado=true
             H2ConnectionProvider provider = H2ConnectionProvider.builder().build();
             driverManagerMockedStatic.when(() -> DriverManager.getConnection(anyString(), anyString(), anyString()))
-                .thenReturn(mockConnection);
+                    .thenReturn(mockConnection);
 
             // primeira chamada cria a conexão
             provider.getConnection();
@@ -169,8 +176,8 @@ class H2ConnectionProviderTest {
             provider.getConnection();
 
             driverManagerMockedStatic.verify(
-                () -> DriverManager.getConnection(anyString(), anyString(), anyString()),
-                times(2));
+                    () -> DriverManager.getConnection(anyString(), anyString(), anyString()),
+                    times(2));
         }
 
         @Test
@@ -179,7 +186,7 @@ class H2ConnectionProviderTest {
             // Caso 3: C1=false, C2=false -> Resultado=false
             H2ConnectionProvider provider = H2ConnectionProvider.builder().build();
             driverManagerMockedStatic.when(() -> DriverManager.getConnection(anyString(), anyString(), anyString()))
-                .thenReturn(mockConnection);
+                    .thenReturn(mockConnection);
 
             // primeira chamada
             provider.getConnection();
@@ -190,8 +197,8 @@ class H2ConnectionProviderTest {
 
             assertThat(conn2).isSameAs(mockConnection);
             driverManagerMockedStatic.verify(
-                () -> DriverManager.getConnection(anyString(), anyString(), anyString()),
-                times(1));
+                    () -> DriverManager.getConnection(anyString(), anyString(), anyString()),
+                    times(1));
         }
 
         // MC/DC para a condição: if (connection == null || connection.isClosed()) no metodo closeConnection()
@@ -201,7 +208,7 @@ class H2ConnectionProviderTest {
             // Caso 1: C1=true, C2=X -> Resultado=true
             H2ConnectionProvider provider = H2ConnectionProvider.builder().build();
             driverManagerMockedStatic.when(() -> DriverManager.getConnection(anyString(), anyString(), anyString()))
-                .thenReturn(mockConnection);
+                    .thenReturn(mockConnection);
 
             provider.getConnection();
             when(mockConnection.isClosed()).thenReturn(false);
@@ -217,7 +224,7 @@ class H2ConnectionProviderTest {
             // Caso 2: C1=false, C2=true -> Resultado=true
             H2ConnectionProvider provider = H2ConnectionProvider.builder().build();
             driverManagerMockedStatic.when(() -> DriverManager.getConnection(anyString(), anyString(), anyString()))
-                .thenReturn(mockConnection);
+                    .thenReturn(mockConnection);
 
             provider.getConnection();
             when(mockConnection.isClosed()).thenReturn(true);
@@ -243,16 +250,16 @@ class H2ConnectionProviderTest {
         void closeConnectionThrowsSQLException() throws SQLException {
             H2ConnectionProvider provider = H2ConnectionProvider.builder().build();
             driverManagerMockedStatic.when(() -> DriverManager.getConnection(anyString(), anyString(), anyString()))
-                .thenReturn(mockConnection);
+                    .thenReturn(mockConnection);
 
             provider.getConnection();
             when(mockConnection.isClosed()).thenReturn(false);
             doThrow(new SQLException("Erro ao fechar a conexão com o banco de dados.")).when(mockConnection).close();
 
             assertThatThrownBy(provider::closeConnection)
-                .isInstanceOf(SQLException.class)
-                .hasMessageContaining("Erro ao fechar a conexão com o banco de dados.")
-                .hasCauseInstanceOf(SQLException.class);
+                    .isInstanceOf(SQLException.class)
+                    .hasMessageContaining("Erro ao fechar a conexão com o banco de dados.")
+                    .hasCauseInstanceOf(SQLException.class);
         }
     }
 
@@ -274,7 +281,7 @@ class H2ConnectionProviderTest {
 
             // mock do DriverManager para retornar a conexão
             driverManagerMockedStatic.when(() -> DriverManager.getConnection(anyString(), anyString(), anyString()))
-                .thenReturn(mockConnection);
+                    .thenReturn(mockConnection);
 
             // mock da conexão para retornar o statement
             when(mockConnection.createStatement()).thenReturn(mockStatement);
@@ -282,14 +289,14 @@ class H2ConnectionProviderTest {
             provider.getConnection();
             provider.initializeDatabase(null);
 
-            verify(mockConnection, times(2)).createStatement();
+            verify(mockConnection, times(3)).createStatement();
             verify(mockStatement).execute("""
                 // cria tabela de usuários caso não exista
                 CREATE TABLE IF NOT EXISTS users (
-                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     username VARCHAR(50) NOT NULL UNIQUE,
                     password VARCHAR(255) NOT NULL,
-                    avatar_url VARCHAR(255) DEFAULT 'default_avatar.png',
+                    avatar_url VARCHAR(255) DEFAULT 'images/default_avatar.png',
                     score INT DEFAULT 0
                 )""");
             verify(mockStatement).execute("""
@@ -297,6 +304,17 @@ class H2ConnectionProviderTest {
                 INSERT INTO users (username, password)
                 SELECT 'admin', '$2a$10$9OGJDg8B8zKVKaAsWUhJZu0.aBi1rxcfeKyJC/38gxT8rI44jozoq'
                 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin')""");
+            verify(mockStatement).execute("""
+                // cria a tabela de simulações
+                CREATE TABLE IF NOT EXISTS simulations (
+                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                    user_id BIGINT NOT NULL,
+                    name VARCHAR(100) NOT NULL,
+                    num_creatures INT NOT NULL,
+                    iterations INT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )""");
         }
 
         @Test
@@ -307,7 +325,7 @@ class H2ConnectionProviderTest {
 
             // configura o mock do DriverManager para retornar a conexão
             driverManagerMockedStatic.when(() -> DriverManager.getConnection(anyString(), anyString(), anyString()))
-                .thenReturn(mockConnection);
+                    .thenReturn(mockConnection);
 
             // configura o mock da conexão para retornar o statement
             when(mockConnection.createStatement()).thenReturn(mockStatement);
@@ -330,14 +348,14 @@ class H2ConnectionProviderTest {
 
             // mock do DriverManager para retornar a conexão
             driverManagerMockedStatic.when(() -> DriverManager.getConnection(anyString(), anyString(), anyString()))
-                .thenReturn(mockConnection);
+                    .thenReturn(mockConnection);
             when(mockConnection.createStatement()).thenReturn(mockStatement);
 
             provider.getConnection();
 
             assertThatThrownBy(() -> provider.initializeDatabase(null))
-                .isInstanceOf(SQLException.class)
-                .hasMessageContaining("Script SQL não encontrado: nonexistent.sql");
+                    .isInstanceOf(SQLException.class)
+                    .hasMessageContaining("Script SQL não encontrado: nonexistent.sql");
         }
 
         @Test
@@ -347,7 +365,7 @@ class H2ConnectionProviderTest {
 
             // mock do DriverManager para retornar a conexão
             driverManagerMockedStatic.when(() -> DriverManager.getConnection(anyString(), anyString(), anyString()))
-                .thenReturn(mockConnection);
+                    .thenReturn(mockConnection);
             when(mockConnection.createStatement()).thenReturn(mockStatement);
 
             // simula uma falha no primeiro comando
@@ -355,9 +373,9 @@ class H2ConnectionProviderTest {
 
             provider.getConnection();
             assertThatThrownBy(() -> provider.initializeDatabase(null))
-                .isInstanceOf(SQLException.class)
-                .hasMessageContaining("Erro ao executar os comandos SQL.")
-                .hasCauseInstanceOf(SQLException.class);
+                    .isInstanceOf(SQLException.class)
+                    .hasMessageContaining("Erro ao executar os comandos SQL.")
+                    .hasCauseInstanceOf(SQLException.class);
         }
     }
 
@@ -372,23 +390,23 @@ class H2ConnectionProviderTest {
         @DisplayName("O builder deve sempre criar uma instância válida")
         @Report(Reporting.GENERATED)
         void builderShouldAlwaysCreateValidInstance(
-            @ForAll @AlphaChars @StringLength(min = 1, max = 50) String url,
-            @ForAll @AlphaChars @StringLength(min = 1, max = 20) String user,
-            @ForAll @AlphaChars @StringLength(min = 1, max = 20) String password,
-            @ForAll @AlphaChars @StringLength(min = 1, max = 50) String scriptFile
+                @ForAll @AlphaChars @StringLength(min = 1, max = 50) String url,
+                @ForAll @AlphaChars @StringLength(min = 1, max = 20) String user,
+                @ForAll @AlphaChars @StringLength(min = 1, max = 20) String password,
+                @ForAll @AlphaChars @StringLength(min = 1, max = 50) String scriptFile
         ) {
             // para qualquer conjunto de strings não nulas/vazias, o builder deve configurar corretamente o objeto.
             H2ConnectionProvider provider = H2ConnectionProvider.builder()
-                .url(url)
-                .user(user)
-                .password(password)
-                .scriptFile(scriptFile)
-                .build();
+                    .url(url)
+                    .user(user)
+                    .password(password)
+                    .scriptFile(scriptFile)
+                    .build();
 
             assertThat(provider).isNotNull();
             assertThat(provider)
-                .extracting("url", "user", "password", "scriptFile")
-                .containsExactly(url, user, password, scriptFile);
+                    .extracting("url", "user", "password", "scriptFile")
+                    .containsExactly(url, user, password, scriptFile);
         }
     }
 }
