@@ -271,7 +271,6 @@ public class LibGdxApplication extends ApplicationAdapter {
             int mouseY = Gdx.input.getY();
             Vector3 worldCoords = uiViewport.unproject(new Vector3(mouseX, mouseY, 0));
 
-            // TODO Adapt to guardian inclusion
             if (playButtonBounds.contains(worldCoords.x, worldCoords.y)
                 || enterPressed) {
                 String input = nameInput.getText();
@@ -321,6 +320,7 @@ public class LibGdxApplication extends ApplicationAdapter {
                 gameViewport.getCamera().update();
             }
 
+            // TODO Inserir lógica de matar cluster para o guardião
             // processa o próximo zumbi
             if (currentZombie.finishedProcessing()) {
                 // encontra o zumbi mais próximo
