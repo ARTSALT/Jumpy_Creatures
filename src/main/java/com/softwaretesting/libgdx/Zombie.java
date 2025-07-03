@@ -216,8 +216,8 @@ public class Zombie {
         otherZombie.setStatusText("-" + stolenCoins, Color.RED);
     }
 
-    public int getCoins() {
-        return creature.getCoins();
+    public Integer getCoins() {
+        return (Integer) creature.getCoins();
     }
 
     public double getPosition() {
