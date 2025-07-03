@@ -14,6 +14,16 @@ import com.softwaretesting.simulation.entity.ParabolicMovement;
 import java.util.Arrays;
 
 public class HorizonGuardian extends Zombie{
+
+    // animações do guardião
+    private static Animation<TextureRegion> attacking;
+    private static Animation<TextureRegion> jumpingUp;
+    private static Animation<TextureRegion> jumpingDown;
+    private static Animation<TextureRegion> landing;
+
+    // audio
+    private static Sound attackSound;
+
     /**
      * Cria um zumbi associado a uma criatura.
      * A posição inicial do sprite é baseada na posição da criatura.
@@ -45,5 +55,26 @@ public class HorizonGuardian extends Zombie{
         return thisRect.contains(otherBaseCenter);
     }
 
+    public static void loadResources(String spritesheetPath, String audioPath, BitmapFont font) {
+        if (HorizonGuardian.spriteSheet != null) {
+            HorizonGuardian.spriteSheet.dispose();
+        }
 
+        HorizonGuardian.spriteSheet = new Texture(Gdx.files.internal(spritesheetPath));
+
+        TextureRegion[][] keyframes = TextureRegion.split(spriteSheet,
+                spriteSheet.getWidth() / 6, spriteSheet.getHeight() / 3);
+
+        // cada keyframe tem tamanho 8, mas a maioria das animações tem menos que 8 frames
+        TextureRegion[] attackingFrames = Arrays.copyOfRange(keyframes[0], 0, 5); // 4 frames
+        TextureRegion[] jumpingUpFrames = Arrays.copyOfRange(keyframes[1], 0, 3); // 4 frames de subida
+        TextureRegion[] jumpingDownFrames = Arrays.copyOfRange(keyframes[1], 3, 5); // 1 frames de descida
+        TextureRegion[] landingFrames = Arrays.copyOfRange(keyframes[1], 5, 6); // 3 frames de aterrissagem
+
+        attacking = new Animation<>(0.15f, attackingFrames);
+        jumpingUp = new Animation<>(0.1f, jumpingUpFrames);
+        jumpingDown = new Animation<>(0.1f, jumpingDownFrames);
+        landing = new Animation<>(0.1f, landingFrames);
+        attackSound = Gdx.audio.newSound(Gdx.files.internal(audioPath));
+    }
 }
