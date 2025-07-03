@@ -11,7 +11,17 @@ import java.util.List;
 public interface RankingView extends View {
 
     /**
-     * Exibe a lista de usuários ordenada por pontuação em ordem crescente.
+     * Exibe o ranking de usuários ordenado por pontuação em ordem crescente.
      */
     void displayRanking(List<UserRankingDTO> ranking);
+
+    /**
+     * Exibe o total de simulações realizadas na aplicação.
+     */
+    void displayTotalSimulations(int totalSimulations);
+
+    /**
+     * Exibe a pontuação média total das simulações bem-sucedidas dos usuários.
+     */
+    void displayTotalAverageScore(double totalAverageScore);
 }

@@ -1,18 +1,15 @@
 package com.softwaretesting.adapters.ui.dto;
 
+/**
+ * Data Transfer Object (DTO) para representar o ranking de usuários.
+ * Este DTO é usado para transferir informações sobre a posição, nome, avatar,
+ * pontuação, número de simulações e pontuação média de cada usuário no ranking.
+ */
 public record UserRankingDTO(
     int position,
     String name,
-    int score
-) {
-    /**
-     * Construtor para criar um UserRankingDTO a partir de um nome e uma pontuação.
-     * A posição é definida como -1, indicando que não foi especificada.
-     *
-     * @param name  O nome do usuário.
-     * @param score A pontuação do usuário.
-     */
-    public UserRankingDTO(String name, int score) {
-        this(-1, name, score);
-    }
-}
+    String avatarUrl,
+    int score,
+    int numSimulations,
+    String averageScore
+) {}
