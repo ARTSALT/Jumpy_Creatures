@@ -1,73 +1,89 @@
 package com.softwaretesting.core.domain.model;
 
-/**
- * Representa uma criatura no ambiente da simulação.
- * Cada criatura possui uma quantidade de moedas e uma posição no horizonte.
- * As criaturas podem roubar moedas umas das outras e atualizar sua posição por saltos.
- */
+import java.util.Objects;
+
 public class Creature {
 
-    // moedas e posição da criatura
-    private int coins;
-    private double position;
-    private double targetPosition;
+    private static int nextId = 0;
+    private final int id;
+    protected int coins;
+    protected double position;
+    protected double targetPosition;
+    private int lastCoinsDelta = 0;
 
-    /**
-     * Cria uma nova criatura com a quantidade de moedas e a posição inicial especificadas.
-     * @param coins A quantidade de moedas da criatura, não pode ser negativa.
-     * @param initialPosition A posição inicial da criatura.
-     */
     public Creature(int coins, double initialPosition) {
         if (coins < 0) {
             throw new IllegalArgumentException("A quantidade de moedas não pode ser negativa.");
         }
-
+        this.id = nextId++;
         this.coins = coins;
         this.position = initialPosition;
         this.targetPosition = initialPosition;
     }
 
-    /**
-     * Define a nova posição da criatura após um salto/movimento.
-     */
+    public int getId() {
+        return id;
+    }
+
     public void updatePosition() {
         this.position = this.targetPosition;
     }
 
-    /**
-     * Reduz as moedas da criatura pela metade e retorna a quantidade removida.
-     * @return O número de moedas que foram roubadas.
-     */
-    private int halveCoins() {
+    public int halveCoins() {
         int half = coins / 2;
         coins -= half;
+        this.lastCoinsDelta = -half;
         return half;
     }
 
+    public void addCoins(int amount) {
+        if (amount > 0) {
+            this.coins += amount;
+            // ATUALIZADO: Registra o ganho de moedas.
+            this.lastCoinsDelta = amount;
+        }
+    }
+
     /**
-     * Rouba metade das moedas de outra criatura.
-     * @param otherCreature A criatura da qual roubar.
-     * @return O número de moedas roubadas.
+     * NOVO: Retorna a última variação de moedas.
+     * @return A quantidade de moedas ganhas (positivo) ou perdidas (negativo).
      */
-    public int stealFrom(Creature otherCreature) {
-        int stolenCoins = otherCreature.halveCoins();
-        this.coins += stolenCoins;
-        return stolenCoins;
+    public int getLastCoinsDelta() {
+        return lastCoinsDelta;
     }
 
-    public int getCoins() {
-        return coins;
+    /**
+     * NOVO: Reseta a variação de moedas para o próximo turno.
+     * Deve ser chamado no início de cada iteração.
+     */
+    public void resetTurnDelta() {
+        this.lastCoinsDelta = 0;
     }
 
-    public double getPosition() {
-        return position;
+    // Getters e Setters
+    public int getCoins() { return coins; }
+    public void setCoins(int coins) { this.coins = coins; }
+    public double getPosition() { return position; }
+    public double getTargetPosition() { return targetPosition; }
+    public void setTargetPosition(double targetPosition) { this.targetPosition = targetPosition; }
+
+    @Override
+    public String toString() {
+        String type = this.getClass().getSimpleName();
+        if(type.isEmpty()) type = "Creature";
+        return String.format("%s[id=%d]{moedas=%d, posicao=%.2f}", type, id, coins, position);
     }
 
-    public double getTargetPosition() {
-        return targetPosition;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Creature creature = (Creature) o;
+        return id == creature.id;
     }
 
-    public void setTargetPosition(double targetPosition) {
-        this.targetPosition = targetPosition;
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

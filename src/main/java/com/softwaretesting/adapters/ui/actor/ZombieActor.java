@@ -3,8 +3,11 @@ package com.softwaretesting.adapters.ui.actor;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.*;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.softwaretesting.core.domain.model.Creature;
@@ -14,269 +17,166 @@ import java.util.Arrays;
 
 public class ZombieActor {
 
-    public enum ZombieState {
+    private enum ZombieState {
         IDLE,
         JUMPING,
-        ATTACKING,
-        FINISHED
+        ATTACKING
     }
 
-    // referência à criatura associada a este zumbi
-    private final Creature creature;
-
-    // spritesheet e texturas
+    private Creature creature;
     private static Texture spriteSheet;
-    private static Texture coinTexture;
+    private static BitmapFont font;
 
-    // animações do zumbi
-    private static Animation<TextureRegion> attacking;
-    private static Animation<TextureRegion> jumpingUp;
-    private static Animation<TextureRegion> jumpingDown;
-    private static Animation<TextureRegion> landing;
-    private static Animation<TextureRegion> beingHit;
-    private static Animation<TextureRegion> dying;
-
-    private ZombieState currentState;
-    private float stateTime = 0f;
-
-    // audio
+    private static Animation<TextureRegion> jumpAnimation;
+    private static Animation<TextureRegion> attackingAnimation;
     private static Sound attackSound;
 
-    // retângulos para colisão entre zumbis
-    private final Rectangle zombieRectangle;
-
-    // classe que gerencia o salto em um movimento parabólico
-    private ParabolicMovement parm;
-
-    // sprite com posição e tamanho
-    private final Sprite sprite;
-    private final Sprite coinSprite;
-    private final float y;
+    private float stateTime = 0f;
+    private ZombieState currentState = ZombieState.IDLE;
     private boolean flip = false;
 
-    // sistema de texto
-    private static BitmapFont font;
-    private String statusText = null;
-    private Color statusColor = null;
+    private final com.badlogic.gdx.graphics.g2d.Sprite sprite;
+    private ParabolicMovement parm;
+    private final Rectangle zombieRectangle;
+    private final float floorY;
+
+    private String statusText;
+    private Color statusColor;
     private float statusTimer = 0f;
+    private int lastSeenDelta = 0;
 
-    /**
-     * Cria um novo zumbi associado a uma criatura.
-     * A posição inicial do sprite é baseada na posição da criatura.
-     *
-     * @param creature A criatura associada a este zumbi.
-     */
-    public ZombieActor(Creature creature) {
-        this.creature = creature;
-
+    public ZombieActor(Creature creature, float floorY) {
         if (spriteSheet == null) {
-            throw new IllegalStateException("SpriteSheet não carregado. Use Zombie.loadResources() para carregar.");
+            throw new IllegalStateException("Resources not loaded. Call ZombieActor.loadResources() first.");
         }
-
-        // posição inicial do sprite é baseada na posição da criatura
-        float initialX = (float) this.creature.getPosition();
-        this.y = Gdx.graphics.getHeight() / 9f;
-
-        sprite = new Sprite(spriteSheet);
-        sprite.setBounds(initialX, y, 350, 350);
-
-        zombieRectangle = new Rectangle();
-        currentState = ZombieState.IDLE;
-
-        parm = new ParabolicMovement(
-            new Vector2(sprite.getX(), sprite.getY()),
-            new Vector2(sprite.getX(), sprite.getY())
-        );
-
-        coinSprite = new Sprite(coinTexture);
-        coinSprite.setBounds(sprite.getX() + sprite.getWidth() / 2f - 50f, sprite.getY() + 60f, 50, 60);
+        this.creature = creature;
+        this.floorY = floorY;
+        this.sprite = new com.badlogic.gdx.graphics.g2d.Sprite(attackingAnimation.getKeyFrames()[0]);
+        this.sprite.setSize(350, 350);
+        this.sprite.setPosition((float) creature.getPosition(), this.floorY);
+        this.zombieRectangle = new Rectangle();
     }
 
-    /**
-     * Lógica do zumbi, atualiza o estado e a posição do sprite.
-     * Deve ser chamado a cada frame.
-     */
-    public void logic() {
-        stateTime += Gdx.graphics.getDeltaTime();
+    public void update(float deltaTime) {
+        stateTime += deltaTime;
 
-        switch(currentState) {
-            case IDLE:
-                currentState = ZombieState.JUMPING;
-                stateTime = 0;
-                jump((float) creature.getTargetPosition());
-                break;
-
+        switch (currentState) {
             case JUMPING:
-                if (sprite.getY() == y) {
-                    creature.updatePosition();
-                    currentState = ZombieState.ATTACKING;
-                    stateTime = 0;
-                    attackSound.play();
+                if (parm != null) {
+                    parm.update(deltaTime);
+                    sprite.setPosition(parm.getPosition().x, parm.getPosition().y);
+
+                    if (parm.isFinished()) {
+                        currentState = ZombieState.ATTACKING;
+                        stateTime = 0;
+                        attackSound.play();
+                        // *** CORREÇÃO: Posiciona o sprite no ponto final do pulo, não na posição antiga do 'creature'. ***
+                        sprite.setPosition(parm.getEndPoint().x, parm.getEndPoint().y);
+                    }
                 }
                 break;
             case ATTACKING:
-                if (attacking.isAnimationFinished(stateTime)) {
-                    currentState = ZombieState.FINISHED;
+                if (attackingAnimation.isAnimationFinished(stateTime)) {
+                    currentState = ZombieState.IDLE;
                     stateTime = 0;
                 }
                 break;
-            case FINISHED:
+            case IDLE:
+                // No estado IDLE, o zumbi fica parado, aguardando o próximo comando de pulo.
                 break;
         }
 
-        coinSprite.setPosition(sprite.getX() + sprite.getWidth() / 2f - 50f, sprite.getY() + 60f);
-    }
-
-    /**
-     * Inicia o salto do zumbi para uma posição alvo.
-     */
-    public void jump(float targetX) {
-        Vector2 startPoint = new Vector2(sprite.getX(), sprite.getY());
-        Vector2 endPoint = new Vector2(targetX, y);
-        parm = new ParabolicMovement(startPoint, endPoint);
-    }
-
-    /**
-     * Desenha o estado atual do zumbi na tela, a cada frame.
-     */
-    public void draw(SpriteBatch spriteBatch) {
-        if (currentState == ZombieState.JUMPING) {
-            parm.update(Gdx.graphics.getDeltaTime());
-            sprite.setPosition(parm.getPosition().x, parm.getPosition().y);
-        }
-
-        TextureRegion currentFrame = getFrame();
-        sprite.setRegion(currentFrame);
-
-        if (currentState == ZombieState.JUMPING) {
-            flip = !(parm.getEndPoint().x > parm.getStartPoint().x);
-        }
-
-        sprite.setFlip(flip, false);
-        sprite.setSize(350, 350);
-        sprite.draw(spriteBatch);
-        coinSprite.draw(spriteBatch);
-
-        // atualiza o timer do texto
         if (statusTimer > 0) {
-            statusTimer -= Gdx.graphics.getDeltaTime();
-
+            statusTimer -= deltaTime;
             if (statusTimer <= 0) {
                 statusText = null;
-                statusColor = null;
             }
         }
+    }
 
-        // desenha o texto se existir
-        if (statusText != null && statusColor != null) {
+    public void draw(SpriteBatch spriteBatch) {
+        TextureRegion currentFrame = getFrame();
+        sprite.setRegion(currentFrame);
+        sprite.setFlip(flip, false);
+        sprite.draw(spriteBatch);
+
+        int currentDelta = creature.getLastCoinsDelta();
+        if (currentDelta != 0 && currentDelta != lastSeenDelta) {
+            setStatusText(String.format("%+d", currentDelta), currentDelta > 0 ? Color.GREEN : Color.RED);
+            this.lastSeenDelta = currentDelta;
+        } else if (currentDelta == 0) {
+            this.lastSeenDelta = 0;
+        }
+
+        if (statusText != null && statusTimer > 0) {
             font.setColor(statusColor);
-            font.draw(spriteBatch, statusText,
-                sprite.getX() + 30f,
-                sprite.getY() + sprite.getHeight());
+            font.draw(spriteBatch, statusText, sprite.getX() + 130, sprite.getY() + sprite.getHeight() + 50);
         }
     }
 
-    public void reset() {
-        currentState = ZombieState.IDLE;
-        stateTime = 0f;
-        flip = false;
-        sprite.setX((float) creature.getPosition());
-    }
-
-    public TextureRegion getFrame() {
-        switch(currentState) {
-            case ATTACKING:
-                return attacking.getKeyFrame(stateTime, false);
-
+    private TextureRegion getFrame() {
+        switch (currentState) {
             case JUMPING:
-                if (sprite.getY() < parm.getJumpHeight() - 1f &&
-                    sprite.getX() < parm.getStartPoint().x + (parm.getDistanceX() * 0.4f)) {
-                    return jumpingUp.getKeyFrame(stateTime, false);
-                } else if (sprite.getY() < parm.getJumpHeight() - 1f &&
-                    sprite.getX() >= parm.getStartPoint().x + (parm.getDistanceX() * 0.4f)) {
-                    return jumpingDown.getKeyFrame(stateTime, false);
-                } else {
-                    return landing.getKeyFrame(stateTime, false);
-                }
-
+                return jumpAnimation.getKeyFrame(stateTime, false);
+            case ATTACKING:
+                return attackingAnimation.getKeyFrame(stateTime, false);
             case IDLE:
-            case FINISHED:
             default:
-                return attacking.getKeyFrames()[0];
+                return attackingAnimation.getKeyFrames()[0];
         }
     }
 
-    public Creature getCreature() {
-        return this.creature;
-    }
+    public void startJump() {
+        if (currentState != ZombieState.IDLE) return;
 
-    public void steal(ZombieActor otherZombieActor) {
-        int stolenCoins = this.creature.stealFrom(otherZombieActor.getCreature());
+        Vector2 startPoint = new Vector2((float) creature.getPosition(), this.floorY);
+        Vector2 endPoint = new Vector2((float) creature.getTargetPosition(), this.floorY);
 
-        this.setStatusText("+" + stolenCoins, Color.GREEN);
-        otherZombieActor.setStatusText("-" + stolenCoins, Color.RED);
-    }
-
-    public int getCoins() {
-        return creature.getCoins();
-    }
-
-    public double getPosition() {
-        return creature.getPosition();
-    }
-
-    public Sprite getSprite() {
-        return sprite;
-    }
-
-    public Rectangle getZombieRectangle() {
-        zombieRectangle.setPosition(sprite.getX() + 100f, sprite.getY() + 40f);
-        zombieRectangle.setSize(sprite.getWidth() * 0.4f, sprite.getHeight() * 0.8f);
-        return zombieRectangle;
-    }
-
-    public boolean finishedProcessing() {
-        return currentState == ZombieState.FINISHED;
+        this.parm = new ParabolicMovement(startPoint, endPoint);
+        this.stateTime = 0;
+        this.currentState = ZombieState.JUMPING;
+        this.flip = endPoint.x < startPoint.x;
     }
 
     private void setStatusText(String text, Color color) {
         this.statusText = text;
         this.statusColor = color;
-        this.statusTimer = 3f; // 3 segundos de exibição
+        this.statusTimer = 2.0f;
+    }
+
+    public void updateData(Creature creature) {
+        this.creature = creature;
+        if (currentState == ZombieState.IDLE) {
+            this.sprite.setPosition((float) creature.getPosition(), this.floorY);
+        }
+    }
+
+    public int getId() {
+        return creature.getId();
+    }
+
+    public Rectangle getZombieRectangle() {
+        zombieRectangle.set(sprite.getX() + 100f, sprite.getY(), sprite.getWidth() * 0.4f, sprite.getHeight() * 0.9f);
+        return zombieRectangle;
+    }
+
+    public boolean isAnimationFinished() {
+        return currentState == ZombieState.IDLE;
     }
 
     public static void loadResources(String spritesheetPath, String audioPath, BitmapFont font) {
-        if (ZombieActor.spriteSheet != null) {
-            ZombieActor.spriteSheet.dispose();
+        if (spriteSheet != null) {
+            return;
         }
-
-        ZombieActor.spriteSheet = new Texture(Gdx.files.internal(spritesheetPath));
-
-        TextureRegion[][] keyframes = TextureRegion.split(spriteSheet,
-            spriteSheet.getWidth() / 8, spriteSheet.getHeight() / 4);
-
-        // cada keyframe tem tamanho 8, mas a maioria das animações tem menos que 8 frames
-        TextureRegion[] attackingFrames = Arrays.copyOfRange(keyframes[0], 0, 4); // 4 frames
-        TextureRegion[] jumpingUpFrames = Arrays.copyOfRange(keyframes[1], 0, 4); // 4 frames de subida
-        TextureRegion[] jumpingDownFrames = Arrays.copyOfRange(keyframes[1], 4, 5); // 1 frames de descida
-        TextureRegion[] landingFrames = Arrays.copyOfRange(keyframes[1], 5, 8); // 3 frames de aterrissagem
-        TextureRegion[] beingHitFrames = Arrays.copyOfRange(keyframes[2], 0, 3); // 3 frames
-        TextureRegion[] dyingFrames = Arrays.copyOfRange(keyframes[3], 0, 5); // 5 frames
-
-        attacking = new Animation<>(0.15f, attackingFrames);
-        jumpingUp = new Animation<>(0.1f, jumpingUpFrames);
-        jumpingDown = new Animation<>(0.1f, jumpingDownFrames);
-        landing = new Animation<>(0.1f, landingFrames);
-        beingHit = new Animation<>(0.1f, beingHitFrames);
-        dying = new Animation<>(0.1f, dyingFrames);
-        attackSound = Gdx.audio.newSound(Gdx.files.internal(audioPath));
-
-        if (coinTexture != null) {
-            coinTexture.dispose();
-        }
-
-        coinTexture = new Texture(Gdx.files.internal("images/coin.png"));
+        spriteSheet = new Texture(Gdx.files.internal(spritesheetPath));
         ZombieActor.font = font;
+
+        TextureRegion[][] keyframes = TextureRegion.split(spriteSheet, spriteSheet.getWidth() / 8, spriteSheet.getHeight() / 4);
+
+        attackingAnimation = new Animation<>(0.15f, Arrays.copyOfRange(keyframes[0], 0, 4));
+        jumpAnimation = new Animation<>(0.1f, Arrays.copyOfRange(keyframes[1], 0, 8));
+
+        attackSound = Gdx.audio.newSound(Gdx.files.internal(audioPath));
     }
 
     public static void unloadResources() {
@@ -284,20 +184,9 @@ public class ZombieActor {
             spriteSheet.dispose();
             spriteSheet = null;
         }
-
         if (attackSound != null) {
             attackSound.dispose();
             attackSound = null;
-        }
-
-        if (coinTexture != null) {
-            coinTexture.dispose();
-            coinTexture = null;
-        }
-
-        if (font != null) {
-            font.dispose();
-            font = null;
         }
     }
 }
