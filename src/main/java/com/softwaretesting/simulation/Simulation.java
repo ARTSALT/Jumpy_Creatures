@@ -16,7 +16,7 @@ public class Simulation {
     private final RandomProvider randomProvider;
     private final double factor;
     private final List<Creature> creatures;
-    private final Guardian guardian;
+    private Guardian guardian;
     private final double creatureWidth;
     private final int maxIterations;
     private int currentIteration = 0;
@@ -49,6 +49,13 @@ public class Simulation {
 
         this.guardian = new Guardian(0.0);
         this.creatures.add(this.guardian);
+    }
+
+    public Simulation(Guardian guardian, int numCreatures, double creatureWidth, int horizonWidth, int maxIterations,
+                      RandomProvider randomProvider) {
+        this(numCreatures, creatureWidth, horizonWidth, maxIterations, randomProvider);
+        creatures.set(creatures.size() - 1, guardian);
+        this.guardian = guardian;
     }
 
     public boolean prepareNextIteration() {
@@ -147,6 +154,10 @@ public class Simulation {
 
     private boolean isSimulationSuccessful() {
         long nonGuardianCount = creatures.stream().filter(c -> !(c instanceof Guardian)).count();
+
+        System.out.println(nonGuardianCount);
+        System.out.println(creatures.contains(guardian));
+
         if (nonGuardianCount == 0 && creatures.contains(guardian)) {
             return true;
         }
