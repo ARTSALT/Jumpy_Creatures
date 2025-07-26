@@ -6,12 +6,22 @@ public class ParabolicMovement {
     private Vector2 startPoint;
     private Vector2 endPoint;
     private Vector2 position;
-    private Vector2 velocity;
+    Vector2 velocity;
     private final float gravity = 500f;
     private float dt;
     private float jumpHeight;
 
     public ParabolicMovement(Vector2 startPoint, Vector2 endPoint) {
+        if (startPoint.equals(endPoint)) {
+            this.startPoint = startPoint;
+            this.endPoint = endPoint;
+            this.position = new Vector2(startPoint);
+            this.velocity = new Vector2(0, 0);
+            this.jumpHeight = 0;
+            this.dt = 0;
+            return;
+        }
+
         this.startPoint = startPoint;
         this.endPoint = endPoint;
         this.position = new Vector2(startPoint);
@@ -23,7 +33,7 @@ public class ParabolicMovement {
         float timeToApex = (float) Math.sqrt((2 * jumpHeight) / gravity);
         float totalTime = timeToApex * 2;
 
-        float velocityX = (totalTime > 0) ? distanceX / totalTime : 0;
+        float velocityX = distanceX / totalTime;
         float velocityY = gravity * timeToApex;
 
         this.velocity = new Vector2(velocityX, velocityY);

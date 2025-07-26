@@ -1,7 +1,5 @@
-package com.softwaretesting.database;
+package com.softwaretesting.adapters.persistence;
 
-import com.softwaretesting.adapters.persistence.DatabaseFactory;
-import com.softwaretesting.adapters.persistence.H2ConnectionProvider;
 import com.softwaretesting.core.application.service.UserService;
 import com.softwaretesting.core.domain.model.User;
 import org.junit.jupiter.api.AfterEach;

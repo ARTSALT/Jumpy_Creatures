@@ -5,6 +5,10 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+/**
+ * Interface para fornecer conexões com o banco de dados.
+ * Permite obter uma conexão, inicializar o banco de dados a partir de um InputStream e fechar a conexão.
+ */
 public interface ConnectionProvider {
     Connection getConnection() throws SQLException;
     void initializeDatabase(InputStream inputStream) throws SQLException, IOException;

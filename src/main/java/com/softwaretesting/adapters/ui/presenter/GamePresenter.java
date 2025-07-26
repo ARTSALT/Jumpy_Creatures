@@ -62,13 +62,13 @@ public class GamePresenter {
 
         switch (currentState) {
             case PREPARING_TURN:
-                if (simulation.prepareNextIteration()) {
-                    view.synchronizeActors(simulation.getCreatures());
-                    currentCreatureIndex = 0;
-                    currentState = GameState.PROCESS_CREATURE;
-                } else {
-                    endGame("Iteration limit reached.");
-                }
+//                if (simulation.prepareNextIteration()) {
+//                    view.synchronizeActors(simulation.getCreatures());
+//                    currentCreatureIndex = 0;
+//                    currentState = GameState.PROCESS_CREATURE;
+//                } else {
+//                    endGame("Iteration limit reached.");
+//                }
                 break;
 
             case PROCESS_CREATURE:

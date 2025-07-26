@@ -1,6 +1,5 @@
-package com.softwaretesting.database;
+package com.softwaretesting.adapters.persistence;
 
-import com.softwaretesting.adapters.persistence.H2ConnectionProvider;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.Report;

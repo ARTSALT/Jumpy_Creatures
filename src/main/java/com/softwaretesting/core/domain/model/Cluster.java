@@ -40,15 +40,6 @@ public class Cluster extends Creature {
         }
     }
 
-    /**
-     * Rouba metade das moedas de outra criatura.
-     * @param otherCreature A criatura da qual roubar.
-     */
-    public void stealFrom(Creature otherCreature) {
-        int stolenCoins = otherCreature.halveCoins();
-        this.addCoins(stolenCoins);
-    }
-
     public List<Creature> getMembers() {
         return members;
     }

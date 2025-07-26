@@ -10,10 +10,18 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 
+/**
+ * Implementação do repositório de simulações, utilizando JDBC para persistência em banco de dados.
+ * Esta classe fornece métodos para salvar, deletar e buscar simulações associadas a um usuário.
+ */
 public class SimulationRepositoryImpl implements SimulationRepository {
 
     private final Connection connectionProvider;
 
+    /**
+     * Construtor que recebe um provedor de conexão para interagir com o banco de dados.
+     * @param connectionProvider Provedor de conexão JDBC.
+     */
     public SimulationRepositoryImpl(Connection connectionProvider) {
         this.connectionProvider = connectionProvider;
     }

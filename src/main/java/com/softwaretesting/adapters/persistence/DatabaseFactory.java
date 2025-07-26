@@ -18,7 +18,15 @@ import java.util.Objects;
  */
 public final class DatabaseFactory {
 
+    /**
+     * Provedor de conexão com o banco de dados.
+     * É usado para obter conexões e inicializar o banco de dados.
+     */
     private final ConnectionProvider provider;
+
+    /**
+     * Serviços de domínio criados pela fábrica.
+     */
     private UserService userService;
     private SimulationService simulationService;
 

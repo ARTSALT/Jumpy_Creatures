@@ -10,13 +10,26 @@ import java.util.*;
  */
 public class Simulation {
 
+    /**
+     * Enum para controlar o estado da simulação numa única iteração.
+     * Facilita a execução granular para interfaces gráficas.
+     */
+    public enum SimulationState {
+        READY_TO_PREPARE, // Esperando o início de uma nova iteração
+        READY_TO_UPDATE,  // Calcula posições-alvo das criaturas, pronto para o movimento
+        READY_TO_RESOLVE, // Criaturas movidas, pronto para resolver colisões
+        FINISHED          // Simulação terminada (sucesso ou limite de iterações)
+    }
+
     private Long id;
     private final RandomProvider randomProvider;
     private final double factor;
     private final List<Creature> creatures;
     private final double creatureWidth;
+    private final double horizonWidth;
     private final int maxIterations;
     private int currentIteration = 0;
+    private SimulationState currentState = SimulationState.READY_TO_PREPARE;
     private boolean isSuccessful;
     private User user;
     private String name;
@@ -37,6 +50,7 @@ public class Simulation {
         if (horizonWidth <= 0) throw new IllegalArgumentException("Horizon width must be positive.");
         if (maxIterations <= 0) throw new IllegalArgumentException("Max iterations must be positive.");
 
+        this.horizonWidth = horizonWidth;
         this.randomProvider = randomProvider;
         this.factor = horizonWidth / 1_000_000.0;
         this.creatures = new ArrayList<>(numCreatures + 1);
@@ -60,9 +74,15 @@ public class Simulation {
         this(numCreatures, 1.0, horizonWidth, iterations, randomProvider);
     }
 
-    public boolean prepareNextIteration() {
-        if (currentIteration >= maxIterations || isSuccessful) {
-            return false;
+    /**
+     * Prepara a próxima iteração. Incrementa o contador e calcula as posições-alvo.
+     * Transita o estado para READY_TO_UPDATE.
+     */
+    public void prepare() {
+        if (currentState != SimulationState.READY_TO_PREPARE) return;
+        if (currentIteration >= maxIterations) {
+            this.currentState = SimulationState.FINISHED;
+            return;
         }
 
         this.currentIteration++;
@@ -72,34 +92,70 @@ public class Simulation {
             creature.resetTurnDelta();
             calculateTargetPosition(creature);
         }
+        this.currentState = SimulationState.READY_TO_UPDATE;
+    }
+
+    /**
+     * Executa o movimento das criaturas para suas posições-alvo.
+     * Transita o estado para READY_TO_RESOLVE.
+     */
+    public void update() {
+        if (currentState != SimulationState.READY_TO_UPDATE) return;
+        System.out.println("----- Atualizando Posições -----");
+        for (Creature creature : creatures) {
+            creature.updatePosition();
+        }
+        this.currentState = SimulationState.READY_TO_RESOLVE;
+    }
+
+    /**
+     * Resolve as colisões e outras ações da iteração.
+     * Verifica se a simulação terminou e transita o estado para READY_TO_PREPARE ou FINISHED.
+     */
+    public void resolve() {
+        if (currentState != SimulationState.READY_TO_RESOLVE) return;
+        System.out.println("----- Resolvendo Colisões e Ações -----");
+        handleCollisionsAndActions();
+
+        if (isSimulationSuccessful()) {
+            isSuccessful = true;
+            this.currentState = SimulationState.FINISHED;
+        } else if (currentIteration >= maxIterations) {
+            this.currentState = SimulationState.FINISHED;
+        } else {
+            this.currentState = SimulationState.READY_TO_PREPARE;
+        }
+        printResults();
+    }
+
+    /**
+     * Executa um ciclo completo de iteração (prepare, update, resolve).
+     * @return true se a iteração foi executada com sucesso, false se a simulação já terminou e não pôde executar.
+     */
+    public boolean executeNextIteration() {
+        if (currentState == SimulationState.FINISHED) {
+            return false;
+        }
+        if (currentState == SimulationState.READY_TO_PREPARE && currentIteration >= maxIterations) {
+            this.currentState = SimulationState.FINISHED;
+            return false;
+        }
+
+        if (currentState == SimulationState.READY_TO_PREPARE) {
+            prepare();
+        }
+        if (currentState == SimulationState.READY_TO_UPDATE) {
+            update();
+        }
+
+        resolve();
+
         return true;
     }
 
     /**
-     * Executa a simulação até que as condições de sucesso sejam atendidas ou o número máximo de iterações seja alcançado.
+     * Lida com colisões entre criaturas e executa ações apropriadas.
      */
-    public void executeNextIteration() {
-        System.out.printf("\n----- Executando a Iteração %d -----\n", currentIteration);
-        // todas as criaturas se movem para a posição alvo
-        for (Creature creature : creatures) {
-            creature.updatePosition();
-        }
-        // lida com colisões e ações
-        handleCollisionsAndActions();
-
-        // não verifica colisões na primeira iteração
-        if (currentIteration > 1) {
-            handleCollisionsAndActions();
-        }
-
-        // verifica se a simulação foi bem-sucedida
-        if (isSimulationSuccessful()) {
-            isSuccessful = true;
-        }
-
-        printResults(); // imprime o resultado da iteração
-    }
-
     private void handleCollisionsAndActions() {
         List<Creature> newClusters = new ArrayList<>();
         Set<Creature> toRemove = new HashSet<>();
@@ -111,7 +167,6 @@ public class Simulation {
 
             for (int j = i + 1; j < creaturesView.size(); j++) {
                 Creature c2 = creaturesView.get(j);
-                if (toRemove.contains(c2)) continue;
 
                 if (Math.abs(c1.getPosition() - c2.getPosition()) < creatureWidth / 2.0) {
                     resolveCollision(c1, c2, newClusters, toRemove);
@@ -122,14 +177,22 @@ public class Simulation {
         this.creatures.removeAll(toRemove);
         this.creatures.addAll(newClusters);
 
-        for (Creature c : newClusters) {
-            if (c instanceof Cluster newCluster) {
-                findAndStealFromClosest(newCluster);
-            }
+        for (Creature newCreature : newClusters) {
+            Cluster newCluster = (Cluster) newCreature;
+            findAndStealFromClosest(newCluster);
         }
     }
 
-    private void resolveCollision(Creature c1, Creature c2, List<Creature> toAdd, Set<Creature> toRemove) {
+    /**
+     * Resolve a colisão entre duas criaturas.
+     * Dependendo do tipo de criaturas, elas podem formar um cluster, roubar moedas ou ser absorvidas por um guardião.
+     * @param c1 A primeira criatura envolvida na colisão.
+     * @param c2 A segunda criatura envolvida na colisão.
+     * @param toAdd Lista de clusters a serem adicionados após a resolução da colisão.
+     * @param toRemove Conjunto de criaturas a serem removidas após a resolução da colisão.
+     */
+    private void resolveCollision(Creature c1, Creature c2,
+                          List<Creature> toAdd, Set<Creature> toRemove) {
         if (c1 instanceof Guardian && c2 instanceof Cluster) {
             ((Guardian) c1).absorbCluster((Cluster) c2);
             toRemove.add(c2);
@@ -142,7 +205,7 @@ public class Simulation {
         } else if (c2 instanceof Cluster) {
             ((Cluster) c2).addMember(c1);
             toRemove.add(c1);
-        } else if (!(c1 instanceof Guardian) && !(c2 instanceof Guardian)) {
+        } else if (!(c1 instanceof Guardian)) {
             Cluster cluster = new Cluster(c1, c2);
             toAdd.add(cluster);
             toRemove.add(c1);
@@ -150,6 +213,11 @@ public class Simulation {
         }
     }
 
+    /**
+     * Encontra a criatura mais próxima de um cluster e tenta roubar moedas dela.
+     * Se não houver criaturas disponíveis, nada acontece.
+     * @param cluster O cluster do qual roubar moedas.
+     */
     private void findAndStealFromClosest(Cluster cluster) {
         creatures.stream()
             .filter(c -> !(c instanceof Guardian) && !(c instanceof Cluster))
@@ -189,6 +257,9 @@ public class Simulation {
         return false;
     }
 
+    /**
+     * Imprime o estado atual da simulação no terminal, incluindo as criaturas e o total de criaturas no horizonte.
+     */
     public void printResults() {
         System.out.println("Estado atual:");
         for (Creature creature : creatures) {
@@ -197,14 +268,31 @@ public class Simulation {
         System.out.printf("Total de criaturas no horizonte: %d\n", creatures.size());
     }
 
+    /**
+     * Calcula a nova posição alvo para uma criatura com base em sua posição atual e moedas.
+     * A nova posição é calculada como uma variação aleatória proporcional às moedas da criatura
+     * conforme a fórmula do requisito: xi ← xi + rgi
+     * @param creature A criatura para a qual calcular a nova posição alvo.
+     */
     private void calculateTargetPosition(Creature creature) {
         double r = randomProvider.nextDouble(-1, 1);
         double newPosition = creature.getPosition() + r * creature.getCoins() * factor;
         creature.setTargetPosition(newPosition);
     }
 
+    /**
+     * Define o número da iteração atual.
+     * A lógica de iteração agora é controlada internamente pelos métodos
+     * {@link #prepare()} e {@link #executeNextIteration()}.
+     */
+    public void run(int iteration) {
+        this.currentIteration = iteration;
+    }
+
+    public SimulationState getCurrentState() { return currentState; }
+
     public List<Creature> getCreatures() {
-        return Collections.unmodifiableList(creatures);
+        return creatures;
     }
 
     public int getIterations() {
@@ -245,5 +333,13 @@ public class Simulation {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public double getHorizonWidth() {
+        return horizonWidth;
+    }
+
+    public void setCurrentState(SimulationState simulationState) {
+        this.currentState = simulationState;
     }
 }

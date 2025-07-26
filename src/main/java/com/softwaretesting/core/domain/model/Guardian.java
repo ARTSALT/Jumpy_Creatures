@@ -14,6 +14,10 @@ public class Guardian extends Creature {
         super(0, initialPosition);
     }
 
+    public Guardian(int coins, double initialPosition) {
+        super(coins, initialPosition);
+    }
+
     /**
      * Absorve todas as moedas de um cluster, efetivamente eliminando-o.
      * @param cluster O cluster a ser absorvido.

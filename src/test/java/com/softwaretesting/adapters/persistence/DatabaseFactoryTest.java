@@ -1,7 +1,5 @@
-package com.softwaretesting.database;
+package com.softwaretesting.adapters.persistence;
 
-import com.softwaretesting.adapters.persistence.ConnectionProvider;
-import com.softwaretesting.adapters.persistence.DatabaseFactory;
 import com.softwaretesting.core.application.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

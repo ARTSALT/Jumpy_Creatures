@@ -1,4 +1,4 @@
-package com.softwaretesting.database;
+package com.softwaretesting.adapters.persistence;
 
 import com.softwaretesting.core.application.service.UserService;
 import com.softwaretesting.core.domain.model.User;

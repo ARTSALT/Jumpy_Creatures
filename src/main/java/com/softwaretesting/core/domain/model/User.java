@@ -1,8 +1,6 @@
 package com.softwaretesting.core.domain.model;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Classe que representa um usuário no sistema.
@@ -123,19 +121,14 @@ public class User {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof User user)) return false;
-        return score == user.score
-            && username.equals(user.username)
-            && password.equals(user.password)
-            && avatarUrl.equals(user.avatarUrl);
+        return username.equals(user.username)
+            && password.equals(user.password);
     }
 
     @Override
     public int hashCode() {
-        int result = id != null ? id.hashCode() : 0;
-        result = 31 * result + username.hashCode();
+        int result = username.hashCode();
         result = 31 * result + password.hashCode();
-        result = 31 * result + avatarUrl.hashCode();
-        result = 31 * result + score;
         return result;
     }
 }

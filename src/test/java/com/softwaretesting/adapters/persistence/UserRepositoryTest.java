@@ -1,6 +1,5 @@
-package com.softwaretesting.database;
+package com.softwaretesting.adapters.persistence;
 
-import com.softwaretesting.adapters.persistence.UserRepositoryImpl;
 import com.softwaretesting.core.domain.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
