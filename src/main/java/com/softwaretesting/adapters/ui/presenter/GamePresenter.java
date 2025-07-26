@@ -5,7 +5,10 @@ import com.softwaretesting.adapters.ui.LibGdxApplication;
 import com.softwaretesting.adapters.ui.screen.UserScreen;
 import com.softwaretesting.adapters.ui.view.GameView;
 import com.softwaretesting.core.application.service.SimulationService;
-import com.softwaretesting.core.domain.model.*;
+import com.softwaretesting.core.domain.model.Creature;
+import com.softwaretesting.core.domain.model.RandomProvider;
+import com.softwaretesting.core.domain.model.Simulation;
+import com.softwaretesting.core.domain.model.User;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -18,18 +21,20 @@ public class GamePresenter {
     private final LibGdxApplication application;
     private Simulation simulation;
 
-    private enum GameState {
-        WAITING_TO_START,
-        PREPARING_TURN,
-        PROCESS_CREATURE,
-        WAITING_FOR_ANIMATION,
-        END_TURN,
-        GAME_OVER
+    private enum PresenterState {
+        READY_FOR_ACTION, // Esperando o usuário pressionar 'P'
+        ANIMATING_JUMP    // Animação de pulo em andamento, esperando ela terminar
     }
-    private GameState currentState = GameState.WAITING_TO_START;
+    private PresenterState currentState = PresenterState.READY_FOR_ACTION;
 
-    private int currentCreatureIndex = 0;
-    private Creature activeCreature;
+    private enum ExecutionMode {
+        MANUAL,
+        AUTOMATIC
+    }
+    private ExecutionMode executionMode = ExecutionMode.MANUAL;
+
+    private Optional<Creature> activeCreature = Optional.empty();
+    private Optional<Creature> arrowTarget = Optional.empty();
 
     private Integer selectedCreatureId;
     private boolean showColliders = false;
@@ -40,18 +45,17 @@ public class GamePresenter {
     }
 
     public void onPlayClicked(String name, String numZombiesText) {
-        if (currentState != GameState.WAITING_TO_START) return;
+        if (isGameRunning()) return;
         try {
             int numZumbis = Integer.parseInt(numZombiesText);
-            if (numZumbis <= 0) {
-                view.showMessage("Number of zombies must be positive.", GameView.MessageType.ERROR);
-                return;
-            }
             RandomProvider randomProvider = (min, max) -> new Random().nextDouble() * (max - min) + min;
-            simulation = new Simulation(numZumbis, 350.0, 1000, 100, randomProvider);
+            simulation = new Simulation(numZumbis, 225, 1000, 100, randomProvider);
             simulation.setName(name.isEmpty() ? "Simulation " + LocalDateTime.now() : name);
+
             view.synchronizeActors(simulation.getCreatures());
-            currentState = GameState.PREPARING_TURN;
+            view.showMessage("Press 'P' to start the simulation.", GameView.MessageType.INFO);
+            currentState = PresenterState.READY_FOR_ACTION;
+            arrowTarget = simulation.peekNextCreatureInTurn();
         } catch (Exception e) {
             view.showMessage("Invalid input.", GameView.MessageType.ERROR);
         }
@@ -60,83 +64,111 @@ public class GamePresenter {
     public void onUpdate(float deltaTime) {
         if (simulation == null) return;
 
-        switch (currentState) {
-            case PREPARING_TURN:
-//                if (simulation.prepareNextIteration()) {
-//                    view.synchronizeActors(simulation.getCreatures());
-//                    currentCreatureIndex = 0;
-//                    currentState = GameState.PROCESS_CREATURE;
-//                } else {
-//                    endGame("Iteration limit reached.");
-//                }
-                break;
+        if (view.isAnyActorOffScreen()) {
+            OrthographicCamera camera = view.getGameCamera();
+            view.setGameCameraZoom(camera.zoom * 1.005f);
+        }
 
-            case PROCESS_CREATURE:
-                activeCreature = null;
-                while (currentCreatureIndex < simulation.getCreatures().size()) {
-                    Creature potentialCreature = simulation.getCreatures().get(currentCreatureIndex);
-                    if (!(potentialCreature instanceof Guardian)) {
-                        activeCreature = potentialCreature;
-                        break;
-                    }
-                    currentCreatureIndex++;
-                }
+        if (currentState == PresenterState.ANIMATING_JUMP && view.areAnimationsFinished()) {
+            // A animação visual terminou. Resolvemos a lógica para a criatura ativa.
+            activeCreature.ifPresent(simulation::resolveTurnFor);
+            view.synchronizeActors(simulation.getCreatures());
 
-                if (activeCreature != null) {
-                    view.startJumpAnimationFor(activeCreature.getId());
-                    currentState = GameState.WAITING_FOR_ANIMATION;
-                } else {
-                    currentState = GameState.END_TURN;
-                }
-                break;
+            activeCreature = Optional.empty();
 
-            case WAITING_FOR_ANIMATION:
-                if (view.isAnyActorOffScreen()) {
-                    OrthographicCamera camera = view.getGameCamera();
-                    view.setGameCameraZoom(camera.zoom * 1.005f);
-                }
+            if (simulation.isFinished()) {
+                endGame(simulation.isSuccessful() ? "SUCCESS!" : "Iteration limit reached.", simulation.isSuccessful());
+                return;
+            }
 
-                if (view.isActorAnimationFinished(activeCreature.getId())) {
-                    currentCreatureIndex++;
-                    currentState = GameState.PROCESS_CREATURE;
-                }
-                break;
+            arrowTarget = simulation.peekNextCreatureInTurn();
 
-            case END_TURN:
-                simulation.executeNextIteration();
-                view.synchronizeActors(simulation.getCreatures());
-                if (simulation.isSuccessful()) {
-                    endGame("SUCCESS!");
-                } else if (simulation.getIterations() >= 100) {
-                    endGame("Iteration limit reached.");
-                } else {
-                    currentState = GameState.PREPARING_TURN;
-                }
-                break;
+            currentState = PresenterState.READY_FOR_ACTION;
+            view.showMessage("Ready for next turn. Press 'P'.", GameView.MessageType.INFO);
+        }
 
-            case GAME_OVER:
-            case WAITING_TO_START:
-                break;
+        // Se estivermos em modo automático e prontos para a próxima ação, avança o turno.
+        if (executionMode == ExecutionMode.AUTOMATIC && currentState == PresenterState.READY_FOR_ACTION) {
+            advanceTurn();
         }
     }
 
-    private void endGame(String finalMessage) {
-        currentState = GameState.GAME_OVER;
+    public void onEnterPressed() {
+        if (executionMode == ExecutionMode.AUTOMATIC) return; // Já está no modo
 
+        executionMode = ExecutionMode.AUTOMATIC;
+        view.showMessage("Auto-run enabled. Press 'P' to pause.", GameView.MessageType.INFO);
+    }
+
+    /**
+     * Chamado quando o usuário pressiona 'P'.
+     * Agora tem dupla função: avançar no modo manual ou pausar no modo automático.
+     */
+    public void onAdvanceSimulationStep() {
+        if (simulation == null || simulation.isFinished()) return;
+
+        // Se estiver no modo automático, o 'P' serve para pausar.
+        if (executionMode == ExecutionMode.AUTOMATIC) {
+            executionMode = ExecutionMode.MANUAL;
+            view.showMessage("Auto-run paused. Press 'P' to advance manually.", GameView.MessageType.INFO);
+            return;
+        }
+
+        // Se estiver no modo manual, avança um turno.
+        if (currentState == PresenterState.READY_FOR_ACTION) {
+            advanceTurn();
+        } else {
+            view.showMessage("Wait for the current animation to finish!", GameView.MessageType.WARNING);
+        }
+    }
+
+    /**
+     * Contém a lógica de avanço de turno, agora
+     * chamado tanto pelo modo manual ('P') quanto pelo automático (onUpdate).
+     */
+    private void advanceTurn() {
+        activeCreature = simulation.processNextCreatureInTurn();
+        arrowTarget = activeCreature;
+
+        activeCreature.ifPresent(creature -> {
+            view.startJumpAnimationFor(creature);
+            currentState = PresenterState.ANIMATING_JUMP;
+            if (executionMode == ExecutionMode.MANUAL) {
+                view.showMessage(creature.getClass().getSimpleName() + " " + creature.getId() + " is jumping...", GameView.MessageType.INFO);
+            }
+        });
+
+        if (activeCreature.isEmpty() && !simulation.isFinished()) {
+            endGame("Limit reached.", false);
+        }
+    }
+
+    private void endGame(String finalMessage, boolean success) {
+        // Garante que o estado do presenter seja resetado para evitar novas ações.
+        currentState = PresenterState.READY_FOR_ACTION;
+        activeCreature = Optional.empty(); // Limpa a criatura ativa
+
+        // Pega o usuário logado na aplicação.
         User currentUser = application.getCurrentUser();
-        if(currentUser != null) {
+
+        // Se houver um usuário, associa-o à simulação e tenta salvar no banco de dados.
+        if (currentUser != null) {
             simulation.setUser(currentUser);
             simulation.setCreatedAt(LocalDateTime.now());
 
             try {
+                // Obtém o serviço de simulação e registra o resultado.
                 SimulationService simulationService = application.getDatabaseFactory().getSimulationService();
                 simulationService.register(simulation);
-                System.out.println("Simulation saved to database.");
+                System.out.println("Simulation saved to database for user: " + currentUser.getUsername());
             } catch (SQLException e) {
+                // Em caso de erro, registra no console.
                 System.err.println("Failed to save simulation to database: " + e.getMessage());
             }
         }
-        view.showGameOver(simulation.isSuccessful(), finalMessage);
+
+        // Chama a View para exibir a tela de "Game Over".
+        view.showGameOver(success, finalMessage);
     }
 
     public void onZombieSelected(int creatureId) {
@@ -156,13 +188,14 @@ public class GamePresenter {
     }
 
     public void onManualZoom(float amount) {
-        if (currentState == GameState.WAITING_TO_START) return;
+        if (!isGameRunning()) return;
         OrthographicCamera camera = view.getGameCamera();
         float newZoom = Math.max(0.1f, camera.zoom + amount);
         view.setGameCameraZoom(newZoom);
     }
 
     public void onExit() {
+        view.stopMusic();
         application.navigateTo(new UserScreen(application));
     }
 
@@ -180,6 +213,10 @@ public class GamePresenter {
     }
 
     public boolean isGameRunning() {
-        return currentState != GameState.WAITING_TO_START && currentState != GameState.GAME_OVER;
+        return simulation != null && simulation.getCurrentState() != Simulation.SimulationState.FINISHED;
+    }
+
+    public Optional<Creature> getArrowTarget() {
+        return arrowTarget;
     }
 }

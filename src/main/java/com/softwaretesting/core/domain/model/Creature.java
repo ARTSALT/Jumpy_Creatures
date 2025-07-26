@@ -43,7 +43,10 @@ public class Creature {
         return id;
     }
 
-    public void updatePosition() {
+    /**
+     * Deve ser chamado depois que a animação visual do movimento terminar.
+     */
+    public void commitPosition() {
         this.position = this.targetPosition;
     }
 

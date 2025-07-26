@@ -7,7 +7,7 @@ public class ParabolicMovement {
     private Vector2 endPoint;
     private Vector2 position;
     Vector2 velocity;
-    private final float gravity = 500f;
+    private final float gravity = 900f;
     private float dt;
     private float jumpHeight;
 

@@ -9,9 +9,17 @@ public interface GameView extends View {
 
     void synchronizeActors(List<Creature> creatures);
 
-    void startJumpAnimationFor(int creatureId);
+    /**
+     * Inicia a animação de pulo para a criatura ativa especificada.
+     * @param creature A criatura que deve começar a pular.
+     */
+    void startJumpAnimationFor(Creature creature);
 
-    boolean isActorAnimationFinished(int creatureId);
+    /**
+     * Verifica se TODAS as animações de pulo em andamento terminaram.
+     * @return true se todos os atores estiverem no estado IDLE.
+     */
+    boolean areAnimationsFinished();
 
     boolean isAnyActorOffScreen();
 
@@ -20,4 +28,6 @@ public interface GameView extends View {
     OrthographicCamera getGameCamera();
 
     void setGameCameraZoom(float zoom);
+
+    void stopMusic();
 }
