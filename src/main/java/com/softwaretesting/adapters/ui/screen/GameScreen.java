@@ -23,6 +23,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.softwaretesting.adapters.ui.LibGdxApplication;
+import com.softwaretesting.adapters.ui.actor.ClusterActor;
 import com.softwaretesting.adapters.ui.actor.GuardianActor;
 import com.softwaretesting.adapters.ui.actor.ZombieActor;
 import com.softwaretesting.adapters.ui.presenter.GamePresenter;
@@ -35,12 +36,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class GameScreen extends ScreenTemplate implements Screen, GameView {
 
     private final GamePresenter presenter;
     private final Map<Integer, ZombieActor> zombieActors = new HashMap<>();
+    private final Map<Integer, ClusterActor> clusterActors = new HashMap<>();
     private GuardianActor guardianActor;
 
     private final Viewport gameViewport;
@@ -124,6 +125,7 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
         createListeners(playButton, simNameInput, numZombiesInput);
         ZombieActor.loadResources("images/zombie_spritesheet.png", "audio/zombie_attack.mp3", application.getFont());
         GuardianActor.loadResources("images/guardian_spritesheet.png");
+        ClusterActor.loadResources("images/cluster_spritesheet.png");
     }
 
     private void createListeners(TextButton playButton, TextField nameInput, TextField numInput) {
@@ -141,27 +143,37 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
         stage.addListener(new InputListener() {
             @Override
             public boolean keyDown(InputEvent event, int keycode) {
-                switch (keycode) {
-                    case Input.Keys.ESCAPE:
+                return switch (keycode) {
+                    case Input.Keys.ESCAPE -> {
                         presenter.onExit();
-                        return true;
-                    case Input.Keys.C:
+                        yield true;
+                    }
+                    case Input.Keys.C -> {
                         presenter.onToggleColliders();
-                        return true;
-                    case Input.Keys.LEFT:
+                        yield true;
+                    }
+                    case Input.Keys.LEFT -> {
                         presenter.onManualZoom(0.02f);
-                        return true;
-                    case Input.Keys.RIGHT:
+                        yield true;
+                    }
+                    case Input.Keys.RIGHT -> {
                         presenter.onManualZoom(-0.02f);
-                        return true;
-                    case Input.Keys.P:
+                        yield true;
+                    }
+                    case Input.Keys.P -> {
                         presenter.onAdvanceSimulationStep();
-                        return true;
-                    case Input.Keys.ENTER:
+                        yield true;
+                    }
+                    case Input.Keys.ENTER -> {
                         presenter.onEnterPressed();
-                        return true;
-                }
-                return false;
+                        yield true;
+                    }
+                    case Input.Keys.END -> {
+                        presenter.onEndPressed();
+                        yield true;
+                    }
+                    default -> false;
+                };
             }
 
             @Override
@@ -176,6 +188,13 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
 
                 if (clickedZombie.isPresent()) {
                     presenter.onZombieSelected(clickedZombie.get().getId());
+                    return true;
+                }
+
+                Optional<ClusterActor> clickedCluster = clusterActors.values().stream()
+                    .filter(actor -> actor.getClusterRectangle().contains(worldCoords.x, worldCoords.y)).findFirst();
+                if (clickedCluster.isPresent()) {
+                    presenter.onZombieSelected(clickedCluster.get().getId());
                     return true;
                 }
 
@@ -207,6 +226,7 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
 
         presenter.onUpdate(deltaTime);
         zombieActors.values().forEach(actor -> actor.update(deltaTime));
+        clusterActors.values().forEach(actor -> actor.update(deltaTime));
         if (guardianActor != null) {
             guardianActor.update(deltaTime);
         }
@@ -216,6 +236,7 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
         spriteBatch.begin();
         drawGameBackground();
         zombieActors.values().forEach(actor -> actor.draw(spriteBatch));
+        clusterActors.values().forEach(actor -> actor.draw(spriteBatch));
         if (guardianActor != null) {
             guardianActor.draw(spriteBatch);
         }
@@ -327,6 +348,7 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
         if (presenter.areCollidersVisible()) {
             shapeRenderer.setColor(Color.RED);
             zombieActors.values().forEach(actor -> shapeRenderer.rect(actor.getZombieRectangle().x, actor.getZombieRectangle().y, actor.getZombieRectangle().width, actor.getZombieRectangle().height));
+            clusterActors.values().forEach(actor -> shapeRenderer.rect(actor.getClusterRectangle().x, actor.getClusterRectangle().y, actor.getClusterRectangle().width, actor.getClusterRectangle().height));
             if (guardianActor != null) {
                 shapeRenderer.rect(guardianActor.getGuardianRectangle().x, guardianActor.getGuardianRectangle().y, guardianActor.getGuardianRectangle().width, guardianActor.getGuardianRectangle().height);
             }
@@ -358,8 +380,9 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
 
     @Override
     public void synchronizeActors(List<Creature> creatures) {
-        List<Integer> creatureIds = creatures.stream().map(Creature::getId).collect(Collectors.toList());
+        List<Integer> creatureIds = creatures.stream().map(Creature::getId).toList();
         zombieActors.keySet().removeIf(id -> !creatureIds.contains(id));
+        clusterActors.keySet().removeIf(id -> !creatureIds.contains(id));
 
         Optional<Creature> guardianModel = creatures.stream().filter(c -> c instanceof Guardian).findFirst();
 
@@ -375,24 +398,41 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
 
         for (Creature creature : creatures) {
             if (!(creature instanceof Guardian)) {
-                zombieActors.computeIfAbsent(creature.getId(), id -> new ZombieActor(creature, floorY))
-                    .updateData(creature);
+                if (creature instanceof Cluster) {
+                    clusterActors.computeIfAbsent(creature.getId(), id -> new ClusterActor(creature, floorY))
+                        .updateData(creature);
+                } else {
+                    zombieActors.computeIfAbsent(creature.getId(), id -> new ZombieActor(creature, floorY))
+                        .updateData(creature);
+                }
             }
         }
     }
 
     @Override
     public void startJumpAnimationFor(Creature creature) {
-        if (creature == null) return;
-
-        if (creature instanceof Guardian) {
-            if (guardianActor != null) {
-                guardianActor.startJump();
+        switch (creature) {
+            case null -> {}
+            case Guardian ignored -> {
+                if (guardianActor != null) guardianActor.startJump();
             }
-        } else {
-            ZombieActor actor = zombieActors.get(creature.getId());
+            case Cluster ignored -> {
+                ClusterActor actor = clusterActors.get(creature.getId());
+                if (actor != null) actor.startJump();
+            }
+            default -> {
+                ZombieActor actor = zombieActors.get(creature.getId());
+                if (actor != null) actor.startJump();
+            }
+        }
+    }
+
+    @Override
+    public void startAttackAnimationFor(Creature creature) {
+        if (creature instanceof Cluster) {
+            ClusterActor actor = clusterActors.get(creature.getId());
             if (actor != null) {
-                actor.startJump();
+                actor.startAttack();
             }
         }
     }
@@ -403,6 +443,9 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
             if (!actor.isAnimationFinished()) {
                 return false;
             }
+        }
+        for (ClusterActor actor : clusterActors.values()) {
+            if (!actor.isAnimationFinished()) return false;
         }
         return guardianActor == null || guardianActor.isAnimationFinished();
     }
@@ -423,11 +466,13 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
             }
         }
 
-        if (guardianActor != null && !viewportBounds.contains(guardianActor.getGuardianRectangle())) {
-            return true;
+        for (ClusterActor actor : clusterActors.values()) {
+            if (!viewportBounds.contains(actor.getClusterRectangle())) {
+                return true;
+            }
         }
 
-        return false;
+        return guardianActor != null && !viewportBounds.contains(guardianActor.getGuardianRectangle());
     }
 
     @Override
@@ -475,6 +520,7 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
         arrowTexture.dispose();
         music.dispose();
         ZombieActor.unloadResources();
+        ClusterActor.unloadResources();
         GuardianActor.unloadResources();
     }
 }

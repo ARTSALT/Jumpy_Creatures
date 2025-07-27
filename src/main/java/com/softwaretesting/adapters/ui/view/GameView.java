@@ -15,6 +15,8 @@ public interface GameView extends View {
      */
     void startJumpAnimationFor(Creature creature);
 
+    void startAttackAnimationFor(Creature creature);
+
     /**
      * Verifica se TODAS as animações de pulo em andamento terminaram.
      * @return true se todos os atores estiverem no estado IDLE.

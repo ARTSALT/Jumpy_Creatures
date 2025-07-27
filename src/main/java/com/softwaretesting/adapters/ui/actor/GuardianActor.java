@@ -41,12 +41,11 @@ public class GuardianActor {
     private final Rectangle guardianRectangle;
     private final float floorY;
 
-    // --- LÓGICA DE TEXTO DE STATUS (ADICIONADA) ---
     private String statusText;
     private Color statusColor;
     private float statusTimer = 0f;
-    private int lastSeenDelta = 0;
-    private final GlyphLayout glyphLayout; // Para centralizar o texto
+    private int lastKnownCoins;
+    private final GlyphLayout glyphLayout;
 
     public GuardianActor(Creature creature, float floorY) {
         if (spriteSheet == null || idleAnimation == null) {
@@ -60,7 +59,8 @@ public class GuardianActor {
         this.guardianRectangle = new Rectangle();
         this.coinSprite = new Sprite(coinTexture);
         this.coinSprite.setSize(50, 60);
-        this.glyphLayout = new GlyphLayout(); // Inicializa o GlyphLayout
+        this.lastKnownCoins = creature.getCoins();
+        this.glyphLayout = new GlyphLayout();
     }
 
     public void update(float deltaTime) {
@@ -95,28 +95,14 @@ public class GuardianActor {
     }
 
     public void draw(SpriteBatch spriteBatch) {
-        TextureRegion currentFrame = getFrame();
-        if (currentFrame == null) return;
-
-        sprite.setRegion(currentFrame);
+        sprite.setRegion(getFrame());
         sprite.setFlip(flip, false);
         sprite.draw(spriteBatch);
-
         int numCoinSprites = calculateCoinSprites();
         float coinStackOffsetY = 15f;
         for (int i = 0; i < numCoinSprites; i++) {
-            coinSprite.setPosition(sprite.getX() + sprite.getWidth() / 2f - 50f,
-                sprite.getY() + 50f + (i * coinStackOffsetY));
+            coinSprite.setY(sprite.getY() + 50f + (i * coinStackOffsetY));
             coinSprite.draw(spriteBatch);
-        }
-
-        // --- LÓGICA DE DESENHO DO TEXTO (ADICIONADA E CORRIGIDA) ---
-        int currentDelta = creature.getLastCoinsDelta();
-        if (currentDelta != 0 && currentDelta != lastSeenDelta) {
-            setStatusText(String.format("%+d", currentDelta), currentDelta > 0 ? Color.GREEN : Color.RED);
-            this.lastSeenDelta = currentDelta;
-        } else if (currentDelta == 0) {
-            this.lastSeenDelta = 0;
         }
 
         if (statusText != null && statusTimer > 0) {
@@ -153,6 +139,13 @@ public class GuardianActor {
     }
 
     public void updateData(Creature creature) {
+        int newCoins = creature.getCoins();
+        if (newCoins != this.lastKnownCoins) {
+            int delta = newCoins - this.lastKnownCoins;
+            setStatusText(String.format("%+d", delta), delta > 0 ? Color.GREEN : Color.RED);
+        }
+        this.lastKnownCoins = newCoins;
+
         this.creature = creature;
         if (currentState == GuardianState.IDLE) {
             this.sprite.setPosition((float) creature.getPosition(), this.floorY);

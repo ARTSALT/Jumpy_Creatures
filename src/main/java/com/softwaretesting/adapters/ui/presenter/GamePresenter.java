@@ -5,10 +5,7 @@ import com.softwaretesting.adapters.ui.LibGdxApplication;
 import com.softwaretesting.adapters.ui.screen.UserScreen;
 import com.softwaretesting.adapters.ui.view.GameView;
 import com.softwaretesting.core.application.service.SimulationService;
-import com.softwaretesting.core.domain.model.Creature;
-import com.softwaretesting.core.domain.model.RandomProvider;
-import com.softwaretesting.core.domain.model.Simulation;
-import com.softwaretesting.core.domain.model.User;
+import com.softwaretesting.core.domain.model.*;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -70,34 +67,56 @@ public class GamePresenter {
         }
 
         if (currentState == PresenterState.ANIMATING_JUMP && view.areAnimationsFinished()) {
-            // A animação visual terminou. Resolvemos a lógica para a criatura ativa.
-            activeCreature.ifPresent(simulation::resolveTurnFor);
+            Optional<Cluster> newCluster = activeCreature.flatMap(simulation::resolveTurnFor);
             view.synchronizeActors(simulation.getCreatures());
-
+            newCluster.ifPresent(view::startAttackAnimationFor);
             activeCreature = Optional.empty();
 
             if (simulation.isFinished()) {
-                endGame(simulation.isSuccessful() ? "SUCCESS!" : "Iteration limit reached.", simulation.isSuccessful());
+                endGame(simulation.getFinalMessage(), simulation.isSuccessful());
                 return;
             }
 
             arrowTarget = simulation.peekNextCreatureInTurn();
-
             currentState = PresenterState.READY_FOR_ACTION;
-            view.showMessage("Ready for next turn. Press 'P'.", GameView.MessageType.INFO);
+
+            if (executionMode == ExecutionMode.MANUAL) {
+                view.showMessage("Ready for next turn. Press 'P'.", GameView.MessageType.INFO);
+            }
         }
 
-        // Se estivermos em modo automático e prontos para a próxima ação, avança o turno.
+        // motor do modo automático
         if (executionMode == ExecutionMode.AUTOMATIC && currentState == PresenterState.READY_FOR_ACTION) {
             advanceTurn();
         }
     }
 
     public void onEnterPressed() {
-        if (executionMode == ExecutionMode.AUTOMATIC) return; // Já está no modo
+        if (executionMode == ExecutionMode.AUTOMATIC) return;
 
         executionMode = ExecutionMode.AUTOMATIC;
         view.showMessage("Auto-run enabled. Press 'P' to pause.", GameView.MessageType.INFO);
+    }
+
+    public void onEndPressed() {
+        if (simulation == null || simulation.isFinished()) return;
+
+        // força a parada de qualquer modo ou animação em andamento
+        this.executionMode = ExecutionMode.MANUAL;
+        this.currentState = PresenterState.READY_FOR_ACTION;
+        this.activeCreature = Optional.empty();
+        this.arrowTarget = Optional.empty();
+
+        view.showMessage("Fast-forwarding to the end...", GameView.MessageType.INFO);
+
+        // comanda a simulação para rodar toda a sua lógica até o fim
+        simulation.runToEnd();
+
+        // Após a simulação terminar, atualiza a tela com o estado final
+        view.synchronizeActors(simulation.getCreatures());
+
+        // exibe o resultado final
+        endGame(simulation.getFinalMessage(), simulation.isSuccessful());
     }
 
     /**
@@ -107,14 +126,14 @@ public class GamePresenter {
     public void onAdvanceSimulationStep() {
         if (simulation == null || simulation.isFinished()) return;
 
-        // Se estiver no modo automático, o 'P' serve para pausar.
+        // se estiver no modo automático, o 'P' serve para pausar
         if (executionMode == ExecutionMode.AUTOMATIC) {
             executionMode = ExecutionMode.MANUAL;
             view.showMessage("Auto-run paused. Press 'P' to advance manually.", GameView.MessageType.INFO);
             return;
         }
 
-        // Se estiver no modo manual, avança um turno.
+        // se estiver no modo manual, avança um turno
         if (currentState == PresenterState.READY_FOR_ACTION) {
             advanceTurn();
         } else {
@@ -138,13 +157,13 @@ public class GamePresenter {
             }
         });
 
-        if (activeCreature.isEmpty() && !simulation.isFinished()) {
-            endGame("Limit reached.", false);
+        if (activeCreature.isEmpty() && simulation.isFinished()) {
+            endGame(simulation.getFinalMessage(), simulation.isSuccessful());
         }
     }
 
     private void endGame(String finalMessage, boolean success) {
-        // Garante que o estado do presenter seja resetado para evitar novas ações.
+        // Garante que o estado do presenter seja resetado para evitar novas ações
         currentState = PresenterState.READY_FOR_ACTION;
         activeCreature = Optional.empty(); // Limpa a criatura ativa
 
@@ -157,12 +176,12 @@ public class GamePresenter {
             simulation.setCreatedAt(LocalDateTime.now());
 
             try {
-                // Obtém o serviço de simulação e registra o resultado.
+                // obtém o serviço de simulação e registra o resultado
                 SimulationService simulationService = application.getDatabaseFactory().getSimulationService();
                 simulationService.register(simulation);
                 System.out.println("Simulation saved to database for user: " + currentUser.getUsername());
             } catch (SQLException e) {
-                // Em caso de erro, registra no console.
+                // em caso de erro, registra no console
                 System.err.println("Failed to save simulation to database: " + e.getMessage());
             }
         }

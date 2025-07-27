@@ -40,7 +40,7 @@ public class ZombieActor {
     private String statusText;
     private Color statusColor;
     private float statusTimer = 0f;
-    private int lastSeenDelta = 0;
+    private int lastKnownCoins;
     private final GlyphLayout glyphLayout;
 
     private static Texture coinTexture;
@@ -60,6 +60,7 @@ public class ZombieActor {
         // Define a posição e o tamanho do sprite da moeda
         coinSprite = new Sprite(coinTexture);
         coinSprite.setSize(50, 60);
+        this.lastKnownCoins = creature.getCoins();
 
         this.glyphLayout = new GlyphLayout();
     }
@@ -129,7 +130,6 @@ public class ZombieActor {
         sprite.setRegion(getFrame());
         sprite.setFlip(flip, false);
         sprite.draw(spriteBatch);
-
         int numCoinSprites = calculateCoinSprites();
         float coinStackOffsetY = 15f;
         for (int i = 0; i < numCoinSprites; i++) {
@@ -137,21 +137,10 @@ public class ZombieActor {
             coinSprite.draw(spriteBatch);
         }
 
-        int currentDelta = creature.getLastCoinsDelta();
-        if (currentDelta != 0 && currentDelta != lastSeenDelta) {
-            setStatusText(String.format("%+d", currentDelta), currentDelta > 0 ? Color.GREEN : Color.RED);
-            this.lastSeenDelta = currentDelta;
-        } else if (currentDelta == 0) {
-            this.lastSeenDelta = 0;
-        }
-
         if (statusText != null && statusTimer > 0) {
             font.setColor(statusColor);
-            // Calcula as dimensões do texto para poder centralizá-lo
             glyphLayout.setText(font, statusText);
-            // Calcula a posição X para que o texto fique centralizado horizontalmente sobre o sprite
             float textX = sprite.getX() + (sprite.getWidth() - glyphLayout.width) / 2;
-            // Calcula a posição Y para que o texto fique acima do sprite
             float textY = sprite.getY() + sprite.getHeight() + glyphLayout.height + 20;
             font.draw(spriteBatch, glyphLayout, textX, textY);
         }
@@ -184,6 +173,16 @@ public class ZombieActor {
     }
 
     public void updateData(Creature creature) {
+        int newCoins = creature.getCoins();
+        // Compara a quantidade de moedas atual com a última que vimos.
+        if (newCoins != this.lastKnownCoins) {
+            int delta = newCoins - this.lastKnownCoins;
+            // Se houver diferença, ativa o texto de status.
+            setStatusText(String.format("%+d", delta), delta > 0 ? Color.GREEN : Color.RED);
+        }
+        // Atualiza a última quantidade de moedas vista.
+        this.lastKnownCoins = newCoins;
+
         this.creature = creature;
         if (currentState == ZombieState.IDLE) {
             this.sprite.setPosition((float) creature.getPosition(), this.floorY);
@@ -236,6 +235,8 @@ public class ZombieActor {
     public boolean isAnimationFinished() {
         return currentState == ZombieState.IDLE;
     }
+
+    public static Sound getAttackSound() { return attackSound; }
 
     public static void loadResources(String spritesheetPath, String audioPath, BitmapFont font) {
         if (spriteSheet != null) {
