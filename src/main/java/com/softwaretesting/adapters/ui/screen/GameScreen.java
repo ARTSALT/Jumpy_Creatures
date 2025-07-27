@@ -49,7 +49,6 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
 
     private final Table setupTable;
     private final Label selectedZombieInfoLabel;
-    private final Label messageLabel;
 
     private final Texture backgroundTexture;
     private final Texture upperBackgroundTexture;
@@ -70,7 +69,7 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
         uiViewport = new ScreenViewport();
         stage.setViewport(uiViewport);
 
-        this.floorY = 280.f;
+        this.floorY = 270.f;
 
         backgroundTexture = new Texture(Gdx.files.internal("images/background.png"));
         upperBackgroundTexture = new Texture(Gdx.files.internal("images/upper_background.png"));
@@ -116,7 +115,8 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
         setupTable.add(simNameInput).width(300).height(40).pad(10).row();
         setupTable.add(new Label("# Zombies:", skin)).pad(10).left();
         setupTable.add(numZombiesInput).width(300).height(40).pad(10).row();
-        setupTable.add(playButton).colspan(2).width(300).height(50).pad(20);
+        setupTable.add(playButton).colspan(2).width(300).height(50).pad(20).row();
+        setupTable.add(messageLabel).colspan(2).pad(10).row();
 
         selectedZombieInfoLabel = new Label("", skin, "font", Color.WHITE);
         selectedZombieInfoLabel.setPosition(20, 20);
@@ -168,7 +168,7 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
                         presenter.onEnterPressed();
                         yield true;
                     }
-                    case Input.Keys.END -> {
+                    case Input.Keys.TAB -> {
                         presenter.onEndPressed();
                         yield true;
                     }
@@ -268,6 +268,13 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
             arrowX = guardianActor.getX() + guardianActor.getSpriteWidth() / 2 - 50f;
             arrowY = guardianActor.getY() + guardianActor.getSpriteHeight() + 50f;
             targetFound = true;
+        } else if (targetCreature instanceof Cluster) {
+            ClusterActor actor = clusterActors.get(targetCreature.getId());
+            if (actor != null) {
+                arrowX = actor.getX() + actor.getSpriteWidth() / 2 - 50f;
+                arrowY = actor.getY() + actor.getSpriteHeight() + 50f;
+                targetFound = true;
+            }
         } else {
             ZombieActor actor = zombieActors.get(targetCreature.getId());
             if (actor != null) {
@@ -359,6 +366,12 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
             if (creature instanceof Guardian && guardianActor != null) {
                 Rectangle rect = guardianActor.getGuardianRectangle();
                 shapeRenderer.rect(rect.x - 2, rect.y - 2, rect.width + 4, rect.height + 4);
+            } else if (creature instanceof Cluster) {
+                ClusterActor actor = clusterActors.get(creature.getId());
+                if (actor != null) {
+                    Rectangle rect = actor.getClusterRectangle();
+                    shapeRenderer.rect(rect.x - 2, rect.y - 2, rect.width + 4, rect.height + 4);
+                }
             } else {
                 ZombieActor actor = zombieActors.get(creature.getId());
                 if (actor != null) {
@@ -499,11 +512,6 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
     @Override
     public void setGameCameraZoom(float zoom) {
         getGameCamera().zoom = zoom;
-    }
-
-    @Override
-    public void showMessage(String message, MessageType type) {
-        messageLabel.setText(message);
     }
 
     @Override

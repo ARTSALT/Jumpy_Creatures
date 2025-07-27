@@ -12,8 +12,8 @@ import java.util.List;
  * Uma simulação é criada por um usuário e associada a ele.
  */
 public interface SimulationRepository {
-    Simulation save(Simulation simulation) throws SQLException;
-    boolean delete(Simulation simulation) throws SQLException;
+    void save(Simulation simulation) throws SQLException;
+    void delete(Long id) throws SQLException;
     List<Simulation> findAllByUser(User user) throws SQLException;
     List<Simulation> findAll() throws SQLException;
 }

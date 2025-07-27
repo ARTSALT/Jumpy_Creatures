@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.softwaretesting.adapters.ui.LibGdxApplication;
 import com.softwaretesting.adapters.ui.screen.UserScreen;
 import com.softwaretesting.adapters.ui.view.GameView;
+import com.softwaretesting.adapters.ui.view.View;
 import com.softwaretesting.core.application.service.SimulationService;
 import com.softwaretesting.core.domain.model.*;
 
@@ -19,8 +20,8 @@ public class GamePresenter {
     private Simulation simulation;
 
     private enum PresenterState {
-        READY_FOR_ACTION, // Esperando o usuário pressionar 'P'
-        ANIMATING_JUMP    // Animação de pulo em andamento, esperando ela terminar
+        READY_FOR_ACTION,
+        ANIMATING_JUMP
     }
     private PresenterState currentState = PresenterState.READY_FOR_ACTION;
 
@@ -44,22 +45,30 @@ public class GamePresenter {
     public void onPlayClicked(String name, String numZombiesText) {
         if (isGameRunning()) return;
         try {
+            if (name == null || name.isBlank()) {
+                throw new IllegalArgumentException("Simulation name cannot be empty.");
+            }
+            if (numZombiesText == null || numZombiesText.isBlank()) {
+                throw new IllegalArgumentException("Number of zombies cannot be empty.");
+            }
+
             int numZumbis = Integer.parseInt(numZombiesText);
             RandomProvider randomProvider = (min, max) -> new Random().nextDouble() * (max - min) + min;
             simulation = new Simulation(numZumbis, 225, 1000, 100, randomProvider);
-            simulation.setName(name.isEmpty() ? "Simulation " + LocalDateTime.now() : name);
+            simulation.setName(name);
 
             view.synchronizeActors(simulation.getCreatures());
-            view.showMessage("Press 'P' to start the simulation.", GameView.MessageType.INFO);
+            view.showMessage("Press 'P' to start. Press ENTER for auto-run.", GameView.MessageType.INFO);
             currentState = PresenterState.READY_FOR_ACTION;
+            executionMode = ExecutionMode.MANUAL;
             arrowTarget = simulation.peekNextCreatureInTurn();
-        } catch (Exception e) {
-            view.showMessage("Invalid input.", GameView.MessageType.ERROR);
+        } catch (IllegalArgumentException e) {
+            view.showMessage("Error: " + e.getMessage(), View.MessageType.ERROR);
         }
     }
 
     public void onUpdate(float deltaTime) {
-        if (simulation == null) return;
+        if (simulation == null || simulation.isFinished()) return;
 
         if (view.isAnyActorOffScreen()) {
             OrthographicCamera camera = view.getGameCamera();
@@ -67,73 +76,50 @@ public class GamePresenter {
         }
 
         if (currentState == PresenterState.ANIMATING_JUMP && view.areAnimationsFinished()) {
-            Optional<Cluster> newCluster = activeCreature.flatMap(simulation::resolveTurnFor);
+            activeCreature.ifPresent(simulation::resolveTurnFor);
             view.synchronizeActors(simulation.getCreatures());
-            newCluster.ifPresent(view::startAttackAnimationFor);
             activeCreature = Optional.empty();
-
             if (simulation.isFinished()) {
                 endGame(simulation.getFinalMessage(), simulation.isSuccessful());
                 return;
             }
-
             arrowTarget = simulation.peekNextCreatureInTurn();
             currentState = PresenterState.READY_FOR_ACTION;
-
             if (executionMode == ExecutionMode.MANUAL) {
                 view.showMessage("Ready for next turn. Press 'P'.", GameView.MessageType.INFO);
             }
         }
 
-        // motor do modo automático
         if (executionMode == ExecutionMode.AUTOMATIC && currentState == PresenterState.READY_FOR_ACTION) {
             advanceTurn();
         }
     }
 
     public void onEnterPressed() {
-        if (executionMode == ExecutionMode.AUTOMATIC) return;
-
+        if (executionMode == ExecutionMode.AUTOMATIC || simulation == null || simulation.isFinished()) return;
         executionMode = ExecutionMode.AUTOMATIC;
         view.showMessage("Auto-run enabled. Press 'P' to pause.", GameView.MessageType.INFO);
     }
 
     public void onEndPressed() {
         if (simulation == null || simulation.isFinished()) return;
-
-        // força a parada de qualquer modo ou animação em andamento
         this.executionMode = ExecutionMode.MANUAL;
         this.currentState = PresenterState.READY_FOR_ACTION;
         this.activeCreature = Optional.empty();
         this.arrowTarget = Optional.empty();
-
         view.showMessage("Fast-forwarding to the end...", GameView.MessageType.INFO);
-
-        // comanda a simulação para rodar toda a sua lógica até o fim
         simulation.runToEnd();
-
-        // Após a simulação terminar, atualiza a tela com o estado final
         view.synchronizeActors(simulation.getCreatures());
-
-        // exibe o resultado final
         endGame(simulation.getFinalMessage(), simulation.isSuccessful());
     }
 
-    /**
-     * Chamado quando o usuário pressiona 'P'.
-     * Agora tem dupla função: avançar no modo manual ou pausar no modo automático.
-     */
     public void onAdvanceSimulationStep() {
         if (simulation == null || simulation.isFinished()) return;
-
-        // se estiver no modo automático, o 'P' serve para pausar
         if (executionMode == ExecutionMode.AUTOMATIC) {
             executionMode = ExecutionMode.MANUAL;
             view.showMessage("Auto-run paused. Press 'P' to advance manually.", GameView.MessageType.INFO);
             return;
         }
-
-        // se estiver no modo manual, avança um turno
         if (currentState == PresenterState.READY_FOR_ACTION) {
             advanceTurn();
         } else {
@@ -141,14 +127,10 @@ public class GamePresenter {
         }
     }
 
-    /**
-     * Contém a lógica de avanço de turno, agora
-     * chamado tanto pelo modo manual ('P') quanto pelo automático (onUpdate).
-     */
     private void advanceTurn() {
+        if (simulation.isFinished()) return;
         activeCreature = simulation.processNextCreatureInTurn();
         arrowTarget = activeCreature;
-
         activeCreature.ifPresent(creature -> {
             view.startJumpAnimationFor(creature);
             currentState = PresenterState.ANIMATING_JUMP;
@@ -156,40 +138,32 @@ public class GamePresenter {
                 view.showMessage(creature.getClass().getSimpleName() + " " + creature.getId() + " is jumping...", GameView.MessageType.INFO);
             }
         });
-
         if (activeCreature.isEmpty() && simulation.isFinished()) {
             endGame(simulation.getFinalMessage(), simulation.isSuccessful());
         }
     }
 
     private void endGame(String finalMessage, boolean success) {
-        // Garante que o estado do presenter seja resetado para evitar novas ações
         currentState = PresenterState.READY_FOR_ACTION;
-        activeCreature = Optional.empty(); // Limpa a criatura ativa
-
-        // Pega o usuário logado na aplicação.
+        executionMode = ExecutionMode.MANUAL;
+        activeCreature = Optional.empty();
+        arrowTarget = Optional.empty();
         User currentUser = application.getCurrentUser();
-
-        // Se houver um usuário, associa-o à simulação e tenta salvar no banco de dados.
         if (currentUser != null) {
             simulation.setUser(currentUser);
             simulation.setCreatedAt(LocalDateTime.now());
-
             try {
-                // obtém o serviço de simulação e registra o resultado
                 SimulationService simulationService = application.getDatabaseFactory().getSimulationService();
                 simulationService.register(simulation);
                 System.out.println("Simulation saved to database for user: " + currentUser.getUsername());
             } catch (SQLException e) {
-                // em caso de erro, registra no console
                 System.err.println("Failed to save simulation to database: " + e.getMessage());
             }
         }
-
-        // Chama a View para exibir a tela de "Game Over".
         view.showGameOver(success, finalMessage);
     }
 
+    // --- Outros métodos (onZombieSelected, getArrowTarget, etc.) ---
     public void onZombieSelected(int creatureId) {
         if (this.selectedCreatureId != null && this.selectedCreatureId == creatureId) {
             this.selectedCreatureId = null;
@@ -197,45 +171,20 @@ public class GamePresenter {
             this.selectedCreatureId = creatureId;
         }
     }
-
-    public void onBackgroundClicked() {
-        this.selectedCreatureId = null;
-    }
-
-    public void onToggleColliders() {
-        this.showColliders = !this.showColliders;
-    }
-
+    public void onBackgroundClicked() { this.selectedCreatureId = null; }
+    public void onToggleColliders() { this.showColliders = !this.showColliders; }
     public void onManualZoom(float amount) {
         if (!isGameRunning()) return;
         OrthographicCamera camera = view.getGameCamera();
         float newZoom = Math.max(0.1f, camera.zoom + amount);
         view.setGameCameraZoom(newZoom);
     }
-
-    public void onExit() {
-        view.stopMusic();
-        application.navigateTo(new UserScreen(application));
-    }
-
+    public void onExit() { view.stopMusic(); application.navigateTo(new UserScreen(application)); }
     public Optional<Creature> getSelectedCreature() {
-        if (selectedCreatureId == null || simulation == null) {
-            return Optional.empty();
-        }
-        return simulation.getCreatures().stream()
-            .filter(c -> c.getId() == selectedCreatureId)
-            .findFirst();
+        if (selectedCreatureId == null || simulation == null) return Optional.empty();
+        return simulation.getCreatures().stream().filter(c -> c.getId() == selectedCreatureId).findFirst();
     }
-
-    public boolean areCollidersVisible() {
-        return this.showColliders;
-    }
-
-    public boolean isGameRunning() {
-        return simulation != null && simulation.getCurrentState() != Simulation.SimulationState.FINISHED;
-    }
-
-    public Optional<Creature> getArrowTarget() {
-        return arrowTarget;
-    }
+    public boolean areCollidersVisible() { return this.showColliders; }
+    public boolean isGameRunning() { return simulation != null && !simulation.isFinished(); }
+    public Optional<Creature> getArrowTarget() { return arrowTarget; }
 }

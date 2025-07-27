@@ -12,6 +12,7 @@ public class Cluster extends Creature {
 
     // a lista de membros do cluster
     private final List<Creature> members;
+    public boolean firstIteration = true;
 
     /**
      * Cria um novo cluster a partir de duas criaturas que colidiram.

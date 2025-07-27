@@ -36,6 +36,11 @@ public class User {
         setScore(0);
     }
 
+    public User(Long id, String username) {
+        this.id = id;
+        setUsername(username);
+    }
+
     public Long getId() {
         return id;
     }

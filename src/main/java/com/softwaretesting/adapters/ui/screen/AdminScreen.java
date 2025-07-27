@@ -145,7 +145,11 @@ public class AdminScreen extends ScreenTemplate implements AdminView {
     private Table createSimulationCard(Simulation simulation) {
         Table row = new Table();
 
-        Label infoLabel = new Label("ID: " + simulation.getId() + " - User: " + simulation.getId(), skin);
+        Label infoLabel = new Label("Name: " + simulation.getName()
+            + " - User: " + simulation.getUser().getUsername()
+            + " - Iterations: " + simulation.getIterations()
+            + " - Success: " + simulation.isSuccessful()
+            + " - NumCreatures: " + simulation.getInitialNumCreatures(), skin);
         TextButton deleteButton = new TextButton("X", skin);
         deleteButton.setColor(Color.RED);
 

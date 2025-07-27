@@ -48,13 +48,20 @@ public class AdminPresenter {
         try {
             application.getDatabaseFactory().getUserService().deleteUser(user);
             adminView.removeUserFromList(user.getId());
+            var simulations = application.getDatabaseFactory().getSimulationService().getAllSimulations();
+            adminView.showSimulationsList(simulations);
         } catch (SQLException | IOException e) {
             throw new RuntimeException("Error on deleting user", e);
         }
     }
 
     public void onDeleteSimulationClicked(Long id) {
-
+        try {
+            application.getDatabaseFactory().getSimulationService().delete(id);
+            adminView.removeSimulationFromList(id);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error on deleting simulation", e);
+        }
     }
 
     public void onUserLogout() {

@@ -19,7 +19,7 @@ public class SimulationService {
         this.simulationRepository = simulationRepository;
     }
 
-    public Simulation register(Simulation simulation) throws SQLException {
+    public void register(Simulation simulation) throws SQLException {
         if (simulation == null) {
             throw new IllegalArgumentException("Simulation cannot be null.");
         }
@@ -27,15 +27,15 @@ public class SimulationService {
             throw new IllegalArgumentException("Simulation must be associated with a user.");
         }
 
-        return simulationRepository.save(simulation);
+        simulationRepository.save(simulation);
     }
 
-    public boolean delete(Simulation simulation) throws SQLException {
-        if (simulation == null) {
-            throw new IllegalArgumentException("Simulation cannot be null.");
+    public void delete(Long id) throws SQLException {
+        if (id == null || id < 0) {
+            throw new IllegalArgumentException("ID cannot be null or negative.");
         }
 
-        return simulationRepository.delete(simulation);
+        simulationRepository.delete(id);
     }
 
     public List<Simulation> getSimulations(User user) throws SQLException {
@@ -47,12 +47,6 @@ public class SimulationService {
     }
 
     public List<Simulation> getAllSimulations() throws SQLException {
-//        RandomProvider randomProvider = (min, max) -> Math.random() * (max - min) + min;
-//        return List.of(
-//            new Simulation(1, 2, 500, randomProvider),
-//            new Simulation(2, 5, 120, randomProvider),
-//            new Simulation(3, 10, 250, randomProvider)
-//        );
         return simulationRepository.findAll();
     }
 
