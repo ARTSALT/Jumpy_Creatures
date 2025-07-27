@@ -101,6 +101,7 @@ public class GuardianActor {
         int numCoinSprites = calculateCoinSprites();
         float coinStackOffsetY = 15f;
         for (int i = 0; i < numCoinSprites; i++) {
+            coinSprite.setX(sprite.getX() + sprite.getWidth() / 2 - 0.225f * sprite.getWidth());
             coinSprite.setY(sprite.getY() + 50f + (i * coinStackOffsetY));
             coinSprite.draw(spriteBatch);
         }

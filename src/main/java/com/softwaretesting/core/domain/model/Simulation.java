@@ -50,7 +50,8 @@ public class Simulation {
         this.initialNumCreatures = numCreatures;
 
         for (int i = 0; i < numCreatures; i++) {
-            creatures.add(new Creature(1_000_000, horizonWidth / 2.0));
+            double initialPosition = randomProvider.nextDouble(0, horizonWidth);
+            creatures.add(new Creature(1_000_000, initialPosition));
         }
         this.creatures.add(new Guardian(0.0));
     }
@@ -64,6 +65,21 @@ public class Simulation {
 
     public Simulation(int numCreatures, int iterations, int horizonWidth, RandomProvider randomProvider) {
         this(numCreatures, 1.0, horizonWidth, iterations, randomProvider);
+    }
+
+    private record CollisionResult(boolean collisionOccurred, boolean entityWasAbsorbed, Optional<Creature> newEntity) {
+        public static CollisionResult noCollision() {
+            return new CollisionResult(false, false, Optional.empty());
+        }
+        public static CollisionResult entityAbsorbed() {
+            return new CollisionResult(true, true, Optional.empty());
+        }
+        public static CollisionResult newEntityCreated(Creature newEntity) {
+            return new CollisionResult(true, false, Optional.of(newEntity));
+        }
+        public static CollisionResult entityModified(Creature modifiedEntity) {
+            return new CollisionResult(true, false, Optional.of(modifiedEntity));
+        }
     }
 
     // --- LÓGICA PARA O MODO DE TURNOS INDIVIDUAIS ---
@@ -129,21 +145,34 @@ public class Simulation {
     public void resolveTurnFor(Creature creature) {
         if (isFinished || creature == null) return;
         creature.commitPosition();
-        Optional<Cluster> newClusterOpt = handleCollisionsFor(creature);
-        if (creature instanceof Guardian) {
-            checkEndCondition();
-            printResults();
-            return;
-        }
-        if (newClusterOpt.isPresent()) {
-            findAndStealFromClosest(newClusterOpt.get());
-        } else {
-            if (creatures.contains(creature)) {
-                findAndStealFromClosest(creature);
+
+        Creature currentEntity = creature;
+        boolean wasAbsorbed = false;
+
+        while (true) {
+            CollisionResult result = handleCollisionsFor(currentEntity);
+
+            if (!result.collisionOccurred()) {
+                break;
+            }
+
+            if (result.entityWasAbsorbed()) {
+                wasAbsorbed = true;
+                break;
+            }
+
+            if (result.newEntity().isPresent()) {
+                currentEntity = result.newEntity().get();
             }
         }
+
+        if (!wasAbsorbed && !(currentEntity instanceof Guardian)) {
+            findAndStealFromClosest(currentEntity);
+        }
+
         checkEndCondition();
         printResults();
+
     }
 
     private void findAndStealFromClosest(Creature stealer) {
@@ -158,46 +187,50 @@ public class Simulation {
             });
     }
 
-    private Optional<Cluster> handleCollisionsFor(Creature movedCreature) {
+    private CollisionResult handleCollisionsFor(Creature movedCreature) {
         Optional<Creature> collisionOpt = creatures.stream()
             .filter(c -> c.getId() != movedCreature.getId() &&
                 Math.abs(c.getPosition() - movedCreature.getPosition()) < creatureWidth / 2.0)
             .findFirst();
-        if (collisionOpt.isEmpty()) return Optional.empty();
+
+        if (collisionOpt.isEmpty()) return CollisionResult.noCollision();
+
         Creature otherCreature = collisionOpt.get();
         System.out.printf("--- COLISÃO DETECTADA: %s %d colidiu com %s %d ---\n",
             movedCreature.getClass().getSimpleName(), movedCreature.getId(),
             otherCreature.getClass().getSimpleName(), otherCreature.getId());
-        Guardian guardian = null;
-        Cluster cluster = null;
-        if (movedCreature instanceof Guardian && otherCreature instanceof Cluster) {
-            guardian = (Guardian) movedCreature;
-            cluster = (Cluster) otherCreature;
-        } else if (otherCreature instanceof Guardian && movedCreature instanceof Cluster) {
-            guardian = (Guardian) otherCreature;
-            cluster = (Cluster) movedCreature;
-        }
-        if (guardian != null) {
+
+        Guardian guardian = (movedCreature instanceof Guardian) ? (Guardian) movedCreature
+            : (otherCreature instanceof Guardian) ? (Guardian) otherCreature : null;
+        Cluster cluster = (movedCreature instanceof Cluster) ? (Cluster) movedCreature
+            : (otherCreature instanceof Cluster) ? (Cluster) otherCreature : null;
+
+        if (guardian != null && cluster != null) {
             System.out.printf("Guardião %d absorveu Cluster %d.\n", guardian.getId(), cluster.getId());
             guardian.absorbCluster(cluster);
             creatures.remove(cluster);
-            return Optional.empty();
+            return CollisionResult.entityAbsorbed();
         }
+
         if (otherCreature instanceof Cluster) {
-            System.out.printf("Cluster %d absorveu %s %d.\n", otherCreature.getId(), movedCreature.getClass().getSimpleName(), movedCreature.getId());
+            System.out.printf("Cluster %d absorveu %s %d.\n",
+                otherCreature.getId(), movedCreature.getClass().getSimpleName(), movedCreature.getId());
             ((Cluster) otherCreature).addMember(movedCreature);
             creatures.remove(movedCreature);
-            return Optional.empty();
+            return CollisionResult.entityAbsorbed();
         }
         if (movedCreature instanceof Cluster) {
-            System.out.printf("Cluster %d absorveu %s %d.\n", movedCreature.getId(), otherCreature.getClass().getSimpleName(), otherCreature.getId());
+            System.out.printf("Cluster %d absorveu %s %d.\n",
+                movedCreature.getId(), otherCreature.getClass().getSimpleName(), otherCreature.getId());
             ((Cluster) movedCreature).addMember(otherCreature);
             creatures.remove(otherCreature);
-            return Optional.empty();
+            return CollisionResult.entityModified(movedCreature);
         }
+
         if (!(movedCreature instanceof Guardian) && !(otherCreature instanceof Guardian)) {
             Cluster newCluster = new Cluster(movedCreature, otherCreature);
-            System.out.printf("Criado novo Cluster %d a partir de %d e %d.\n", newCluster.getId(), movedCreature.getId(), otherCreature.getId());
+            System.out.printf("Criado novo Cluster %d a partir de %d e %d.\n",
+                newCluster.getId(), movedCreature.getId(), otherCreature.getId());
             int activeIndex = creatures.indexOf(movedCreature);
             if (activeIndex != -1) {
                 creatures.set(activeIndex, newCluster);
@@ -206,9 +239,10 @@ public class Simulation {
             }
             creatures.remove(otherCreature);
             turnBasedCreatureIndex = creatures.indexOf(newCluster);
-            return Optional.of(newCluster);
+            return CollisionResult.newEntityCreated(newCluster);
         }
-        return Optional.empty();
+
+        return CollisionResult.noCollision();
     }
 
     public Optional<Creature> peekNextCreatureInTurn() {
@@ -335,8 +369,10 @@ public class Simulation {
             return;
         }
         if (creatures.size() == 2) {
-            Guardian guardian = (Guardian) creatures.stream().filter(c -> c instanceof Guardian).findFirst().orElse(null);
-            Creature other = creatures.stream().filter(c -> !(c instanceof Guardian)).findFirst().orElse(null);
+            Guardian guardian = (Guardian) creatures.stream().filter(
+                c -> c instanceof Guardian).findFirst().orElse(null);
+            Creature other = creatures.stream().filter(
+                c -> !(c instanceof Guardian)).findFirst().orElse(null);
             if (guardian != null && other != null && other.getClass() == Creature.class) {
                 this.isFinished = true;
                 if (guardian.getCoins() > other.getCoins()) {
