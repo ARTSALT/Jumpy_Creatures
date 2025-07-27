@@ -142,7 +142,7 @@ public class RankingScreen extends ScreenTemplate implements RankingView {
 
     @Override
     public void displayTotalAverageScore(double totalAverageScore) {
-        footerTable.add(new Label("System-wide Average Score: " + String.format("%.2f", totalAverageScore),
+        footerTable.add(new Label("System-wide Average Score: " + String.format("%.2f%%", totalAverageScore),
             skin, "font", Color.WHITE)).expandX().right();
     }
 

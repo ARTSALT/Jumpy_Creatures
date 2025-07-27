@@ -4,7 +4,12 @@ import com.softwaretesting.adapters.ui.LibGdxApplication;
 import com.softwaretesting.adapters.ui.dto.UserRankingDTO;
 import com.softwaretesting.adapters.ui.screen.LoginScreen;
 import com.softwaretesting.adapters.ui.view.RankingView;
+import com.softwaretesting.core.application.service.SimulationService;
+import com.softwaretesting.core.application.service.UserService;
+import com.softwaretesting.core.domain.model.Simulation;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -25,37 +30,57 @@ public class RankingPresenter {
 
     public void loadRanking() {
         // obtém os dados de ranking de usuários
-        List<UserRankingDTO> data =List.of(
-            new UserRankingDTO("Alice", "images/default_avatar.png", 1500, 10, "75.0"),
-            new UserRankingDTO("Bob", "images/default_avatar.png", 1400, 8, "70.0"),
-            new UserRankingDTO("Charlie", "images/default_avatar.png", 1300, 12, "65.0"),
-            new UserRankingDTO("David", "images/default_avatar.png", 1200, 5, "60.0"),
-            new UserRankingDTO("Ellie", "images/default_avatar.png", 1500, 10, "75.0"),
-            new UserRankingDTO("Fabio", "images/default_avatar.png", 1400, 8, "70.0"),
-            new UserRankingDTO("Gerald", "images/default_avatar.png", 1300, 12, "65.0"),
-            new UserRankingDTO("Harold", "images/default_avatar.png", 1200, 5, "60.0"),
-            new UserRankingDTO("Illya", "images/default_avatar.png", 1500, 10, "75.0"),
-            new UserRankingDTO("Jorge", "images/default_avatar.png", 1400, 8, "70.0"),
-            new UserRankingDTO("Kira", "images/default_avatar.png", 1300, 12, "65.0"),
-            new UserRankingDTO("L", "images/default_avatar.png", 1200, 5, "60.0")
-        );
+        try {
+            UserService userService = application.getDatabaseFactory().getUserService();
+            SimulationService simulationService = application.getDatabaseFactory().getSimulationService();
 
-        // ordena a lista de usuários por pontuação em ordem decrescente
-        List<UserRankingDTO> sortedByScore = data.stream()
-            .sorted(Comparator.comparingInt(UserRankingDTO::score).reversed())
-            .toList();
+            List<UserRankingDTO> data = userService.getAllUsers().stream()
+                .map(user -> {
+                    try {
+                        // cria o DTO de ranking do usuário
+                        return new UserRankingDTO(
+                            user.getUsername(),
+                            user.getAvatarUrl(),
+                            user.getScore(),
+                            simulationService.getUserSimulationCount(user.getId()),
+                            String.format("%.2f%%", userService.getUserAverageScore(simulationService, user))
+                        );
+                    } catch (SQLException e) {
+                        throw new RuntimeException("Error fetching user data", e);
+                    }
+                })
+                .filter(user -> !user.name().equals("admin")) // filtra usuário admin
+                .toList();
 
-        // adiciona a posição de cada usuário no ranking
-        List<UserRankingDTO> ranking = new ArrayList<>();
-        AtomicInteger rank = new AtomicInteger(1);
-        sortedByScore.forEach(currentUser ->
-            ranking.add(new UserRankingDTO(currentUser, rank.getAndIncrement()))
-        );
+            // ordena a lista de usuários por pontuação em ordem decrescente
+            List<UserRankingDTO> sortedByScore = data.stream()
+                .sorted(Comparator.comparingInt(UserRankingDTO::score).reversed())
+                .toList();
 
-        // envia os dados para a view
-        rankingView.displayRanking(ranking);
-        rankingView.displayTotalSimulations(100);
-        rankingView.displayTotalAverageScore(75.5);
+            // adiciona a posição de cada usuário no ranking
+            List<UserRankingDTO> ranking = new ArrayList<>();
+            AtomicInteger rank = new AtomicInteger(1);
+            sortedByScore.forEach(currentUser ->
+                ranking.add(new UserRankingDTO(currentUser, rank.getAndIncrement()))
+            );
+
+            // calcula o total de simulações e o número de simulações bem-sucedidas
+            var allSimulations = simulationService.getAllSimulations();
+            int totalSimulations = allSimulations.isEmpty() ? 1 : allSimulations.size();
+            double totalWellSucceededSimulations = allSimulations.stream()
+                .filter(Simulation::isSuccessful)
+                .count();
+
+            // calcula a média de pontuação total
+            double totalAverageScore = totalWellSucceededSimulations / totalSimulations * 100;
+
+            // envia os dados para a view
+            rankingView.displayRanking(ranking);
+            rankingView.displayTotalSimulations(simulationService.getAllSimulations().size());
+            rankingView.displayTotalAverageScore(totalAverageScore);
+        } catch (SQLException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public String getUserButton() {

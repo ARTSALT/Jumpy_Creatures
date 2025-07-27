@@ -49,6 +49,16 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public void updateScore(User user) throws SQLException {
+        String sql = "UPDATE users SET score = ? WHERE username = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, user.getScore());
+            ps.setString(2, user.getUsername());
+            ps.executeUpdate();
+        }
+    }
+
+    @Override
     public boolean deleteByUsername(String username) throws SQLException {
         String sql = "DELETE FROM users WHERE username = ?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {

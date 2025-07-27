@@ -8,6 +8,7 @@ import com.softwaretesting.adapters.ui.view.View;
 import com.softwaretesting.core.application.service.SimulationService;
 import com.softwaretesting.core.domain.model.*;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -53,6 +54,10 @@ public class GamePresenter {
             }
 
             int numZumbis = Integer.parseInt(numZombiesText);
+            if (numZumbis > 1000) {
+                throw new IllegalArgumentException("Number of zombies cannot exceed 1000.");
+            }
+
             RandomProvider randomProvider = (min, max) -> new Random().nextDouble() * (max - min) + min;
             simulation = new Simulation(numZumbis, 225, 1000, 100, randomProvider);
             simulation.setName(name);
@@ -155,9 +160,13 @@ public class GamePresenter {
             try {
                 SimulationService simulationService = application.getDatabaseFactory().getSimulationService();
                 simulationService.register(simulation);
+                User userS = simulationService.getSimulationUser(simulation.getId());
+                application.getDatabaseFactory().getUserService().updateUserScore(simulationService, userS);
                 System.out.println("Simulation saved to database for user: " + currentUser.getUsername());
             } catch (SQLException e) {
                 System.err.println("Failed to save simulation to database: " + e.getMessage());
+            } catch (IOException e) {
+                System.err.println("Failed to update user score: " + e.getMessage());
             }
         }
         view.showGameOver(success, finalMessage);

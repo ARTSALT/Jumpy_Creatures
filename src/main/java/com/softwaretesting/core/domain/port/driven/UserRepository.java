@@ -13,6 +13,7 @@ import java.util.Optional;
 public interface UserRepository {
     boolean save(User user) throws SQLException;
     void update(User user) throws SQLException;
+    void updateScore(User user) throws SQLException;
     boolean deleteByUsername(String username) throws SQLException;
     Optional<User> findByUsername(String username) throws SQLException;
     boolean existsByUsername(String username) throws SQLException;

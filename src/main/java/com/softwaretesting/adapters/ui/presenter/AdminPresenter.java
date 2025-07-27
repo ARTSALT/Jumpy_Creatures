@@ -5,6 +5,7 @@ import com.softwaretesting.adapters.ui.screen.AdminScreen;
 import com.softwaretesting.adapters.ui.screen.LoginScreen;
 import com.softwaretesting.adapters.ui.screen.RankingScreen;
 import com.softwaretesting.adapters.ui.view.AdminView;
+import com.softwaretesting.core.application.service.SimulationService;
 import com.softwaretesting.core.domain.model.Simulation;
 import com.softwaretesting.core.domain.model.User;
 
@@ -57,10 +58,21 @@ public class AdminPresenter {
 
     public void onDeleteSimulationClicked(Long id) {
         try {
-            application.getDatabaseFactory().getSimulationService().delete(id);
+            SimulationService simulationService = application.getDatabaseFactory().getSimulationService();
+            User userS = simulationService.getSimulationUser(id);
+            simulationService.delete(id);
+            application.getDatabaseFactory().getUserService().updateUserScore(simulationService, userS);
             adminView.removeSimulationFromList(id);
+            adminView.showUsersList(
+                application.getDatabaseFactory().getUserService().getAllUsers()
+                    .stream()
+                    .filter(user -> !user.isAdmin()) // remove o admin da lista
+                    .toList()
+            );
         } catch (SQLException e) {
             throw new RuntimeException("Error on deleting simulation", e);
+        } catch (IOException e) {
+            throw new RuntimeException("Error updating user score", e);
         }
     }
 

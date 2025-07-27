@@ -16,4 +16,6 @@ public interface SimulationRepository {
     void delete(Long id) throws SQLException;
     List<Simulation> findAllByUser(User user) throws SQLException;
     List<Simulation> findAll() throws SQLException;
+    User findUserBySimulationId(Long id) throws SQLException;
+    int countByUserId(Long id) throws SQLException;
 }

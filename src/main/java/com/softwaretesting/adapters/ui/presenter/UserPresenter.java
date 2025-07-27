@@ -3,18 +3,21 @@ package com.softwaretesting.adapters.ui.presenter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.softwaretesting.adapters.ui.LibGdxApplication;
+import com.softwaretesting.adapters.ui.dto.SimulationSummaryDTO;
 import com.softwaretesting.adapters.ui.screen.GameScreen;
 import com.softwaretesting.adapters.ui.screen.LoginScreen;
 import com.softwaretesting.adapters.ui.screen.RankingScreen;
 import com.softwaretesting.adapters.ui.screen.StatisticsScreen;
 import com.softwaretesting.adapters.ui.view.UserView;
 import com.softwaretesting.core.application.service.SimulationService;
+import com.softwaretesting.core.application.service.UserService;
 import com.softwaretesting.core.domain.model.Simulation;
 import com.softwaretesting.core.domain.model.User;
 
 import java.awt.*;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class UserPresenter {
@@ -36,6 +39,8 @@ public class UserPresenter {
         try {
             // usuário logado
             User user = application.getCurrentUser();
+            // serviço dos usuários
+            UserService userService = application.getDatabaseFactory().getUserService();
             // serviço das simulações
             SimulationService simulationService = application.getDatabaseFactory().getSimulationService();
 
@@ -48,15 +53,30 @@ public class UserPresenter {
             if (allSims != null && !allSims.isEmpty()) {
                 allSimsCount = allSims.size();
                 if (successfulSims != null && !successfulSims.isEmpty()) {
-                    avgSuccess = successfulSims.size() / (double) allSims.size();
+                    avgSuccess = successfulSims.size() / (double) allSims.size() * 100;
                 }
             }
 
+            user.setScore(successfulSims != null ? successfulSims.size() : 0);
+            userService.update(user);
+
+            // exibe as informações do usuário na view
             userView.displayUserInfo(user.getUsername(), user.getScore(), allSimsCount);
             userView.setUserProfileImage(user.getAvatarUrl());
             userView.setAverageSuccessRate(avgSuccess);
+            userView.displaySimulationList(allSims != null ? allSims.stream()
+                .map(simulation -> new SimulationSummaryDTO(
+                    simulation.getId(),
+                    simulation.getName(),
+                    simulation.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")),
+                    simulation.getInitialNumCreatures(),
+                    simulation.getIterations(),
+                    simulation.isSuccessful()))
+                .toList() : null);
         } catch (SQLException e) {
             throw new RuntimeException("Error fetching successful simulations", e);
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading user avatar", e);
         }
     }
 

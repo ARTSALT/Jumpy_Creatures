@@ -107,7 +107,7 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
         TextField simNameInput = new TextField("", skin);
         simNameInput.setMessageText("Simulation Name");
         TextField numZombiesInput = new TextField("", skin);
-        numZombiesInput.setMessageText("# Zombies (e.g., 10)");
+        numZombiesInput.setMessageText("Max 1000 Zombies");
         numZombiesInput.setTextFieldFilter(new TextField.TextFieldFilter.DigitsOnlyFilter());
         TextButton playButton = new TextButton("Run Simulation", skin);
 

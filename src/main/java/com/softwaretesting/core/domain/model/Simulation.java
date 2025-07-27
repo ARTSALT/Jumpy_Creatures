@@ -385,7 +385,9 @@ public class Simulation {
     public List<Creature> getCreatures() { return creatures; }
     public SimulationState getCurrentState() { return currentState; }
     public int getIterations() { return currentIteration; }
+    public void setIterations(int iterations) { this.currentIteration = iterations; }
     public boolean isSuccessful() { return isSuccessful; }
+    public void setSuccessful(boolean successful) { this.isSuccessful = successful; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
     public String getName() { return name; }

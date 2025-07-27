@@ -56,4 +56,24 @@ public class SimulationService {
             .filter(Simulation::isSuccessful)
             .toList();
     }
+
+    public User getSimulationUser(Long id) throws SQLException {
+        if (id == null || id < 0) {
+            throw new IllegalArgumentException("ID cannot be null or negative.");
+        }
+
+        return simulationRepository.findUserBySimulationId(id);
+    }
+
+    public int getUserSimulationCount(Long id) {
+        if (id == null || id < 0) {
+            throw new IllegalArgumentException("ID cannot be null or negative.");
+        }
+
+        try {
+            return simulationRepository.countByUserId(id);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error counting simulations for user ID: " + id, e);
+        }
+    }
 }

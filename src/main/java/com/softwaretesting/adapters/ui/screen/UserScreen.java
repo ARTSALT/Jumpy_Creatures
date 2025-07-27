@@ -1,6 +1,7 @@
 package com.softwaretesting.adapters.ui.screen;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.graphics.Texture;
@@ -87,13 +88,13 @@ public class UserScreen extends ScreenTemplate implements UserView {
         leftColumn.row();
         leftColumn.add(usernameLabel).padBottom(30);
         leftColumn.row();
-        leftColumn.add(infoBox).width(475).height(100).padBottom(40);
+        leftColumn.add(infoBox).width(500).height(100).padBottom(40);
         leftColumn.row();
         leftColumn.add(runSimButton).width(250).height(50);
 
         // =================================================================================================
         // coluna da direita
-        Label simOverviewLabel = new Label("Simulation Overview", skin, "title", Color.WHITE);
+        Label simOverviewLabel = new Label("Simulations Overview", skin, "title", Color.WHITE);
 
         simulationListTable = new Table(); // tabela que conterá os cards das simulações
         ScrollPane scrollPane = new ScrollPane(simulationListTable, skin);
@@ -102,7 +103,7 @@ public class UserScreen extends ScreenTemplate implements UserView {
 
         rightColumn.add(simOverviewLabel).align(Align.left).padBottom(20);
         rightColumn.row();
-        rightColumn.add(scrollPane).grow(); // faz a lista ocupar o espaço restante'
+        rightColumn.add(scrollPane).grow(); // faz a lista ocupar o espaço restante
 
         createListeners();
 
@@ -143,17 +144,23 @@ public class UserScreen extends ScreenTemplate implements UserView {
         Table card = new Table();
         card.setBackground(skin.getDrawable("round-white"));
         card.pad(15);
-        card.align(Align.left);
 
-        card.add(new Label(simulationDTO.name(), skin, "title"))
-            .colspan(2).align(Align.left).padBottom(10);
+        Label nameLabel = new Label(simulationDTO.name(), skin, "title");
+        nameLabel.setWrap(true);
+        card.add(nameLabel).colspan(2).growX().align(Align.left).padBottom(10);
         card.row();
-        card.add(new Label("Date: " + simulationDTO.date(), skin)).align(Align.left);
-        card.add(new Label("Zombies: " + simulationDTO.zombies(), skin)).align(Align.right);
+
+        card.add(new Label("Date: ", skin)).align(Align.left);
+        card.add(new Label(simulationDTO.date(), skin)).align(Align.right);
         card.row();
-        card.add(new Label("Iterations: " + simulationDTO.iterations(), skin)).align(Align.left);
+        card.add(new Label("Zombies: ", skin)).align(Align.left);
+        card.add(new Label(Integer.toString(simulationDTO.zombies()), skin)).align(Align.right);
+        card.row();
+        card.add(new Label("Iterations: ", skin)).align(Align.left);
+        card.add(new Label(Integer.toString(simulationDTO.iterations()), skin)).align(Align.right);
+        card.row();
         card.add(new Label(simulationDTO.wasSuccessful() ? "SUCCESS" : "FAILED", skin, "font",
-            simulationDTO.wasSuccessful() ? Color.GREEN : Color.RED)).align(Align.right);
+            simulationDTO.wasSuccessful() ? Color.GREEN : Color.RED)).colspan(2).align(Align.right);
 
         card.addListener(new ChangeListener() {
             @Override
@@ -181,7 +188,7 @@ public class UserScreen extends ScreenTemplate implements UserView {
         stage.addListener(new InputListener() {
             @Override
             public boolean keyDown(InputEvent event, int keycode) {
-                if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE) {
+                if (keycode == Input.Keys.ESCAPE) {
                     presenter.onUserLogout();
                     return true;
                 }

@@ -1,5 +1,6 @@
 package com.softwaretesting.core.application.service;
 
+import com.softwaretesting.core.domain.model.Simulation;
 import com.softwaretesting.core.domain.model.User;
 import com.softwaretesting.core.domain.port.driven.UserRepository;
 import org.mindrot.jbcrypt.BCrypt;
@@ -43,6 +44,14 @@ public class UserService {
         }
 
         userRepository.update(user);
+    }
+
+    public void updateUserScore(SimulationService simulationService, User user) throws SQLException {
+        // obtém a lista de todas as simulações bem-sucedidas do usuário
+        List<Simulation> successfulSims = simulationService.getSuccessfulSimulations(user);
+
+        user.setScore(successfulSims != null ? successfulSims.size() : 0);
+        userRepository.updateScore(user);
     }
 
     public Optional<User> login(User user) throws SQLException {
@@ -93,5 +102,21 @@ public class UserService {
                 }
             })
             .toList();
+    }
+
+    public double getUserAverageScore(SimulationService simulationService, User user) throws SQLException {
+        List<Simulation> allSims = simulationService.getSimulations(user);
+        List<Simulation> successfulSims = simulationService.getSuccessfulSimulations(user);
+
+        double avgSuccess = 0.0;
+        int allSimsCount;
+        if (allSims != null && !allSims.isEmpty()) {
+            allSimsCount = allSims.size();
+            if (successfulSims != null && !successfulSims.isEmpty()) {
+                avgSuccess = successfulSims.size() / (double) allSimsCount * 100;
+            }
+        }
+
+        return avgSuccess;
     }
 }

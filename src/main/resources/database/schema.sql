@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS simulations (
     name VARCHAR(100) NOT NULL,
     num_creatures INT NOT NULL,
     iterations INT NOT NULL,
+    is_successful BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
