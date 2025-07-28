@@ -123,7 +123,7 @@ class CreatureTest {
             void shouldUpdatePositionToTargetPosition() {
                 Creature creature = new Creature(100, 50.0);
                 creature.setTargetPosition(-25.5);
-                creature.updatePosition();
+                creature.commitPosition();
                 assertThat(creature.getPosition()).isEqualTo(-25.5);
             }
 
@@ -257,7 +257,7 @@ class CreatureTest {
         ) {
             Creature creature = new Creature(100, initialPosition);
             creature.setTargetPosition(targetPosition);
-            creature.updatePosition();
+            creature.commitPosition();
             assertThat(creature.getPosition()).isEqualTo(targetPosition);
         }
 

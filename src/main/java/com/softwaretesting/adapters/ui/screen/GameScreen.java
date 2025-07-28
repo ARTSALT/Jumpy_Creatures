@@ -294,6 +294,7 @@ public class GameScreen extends ScreenTemplate implements Screen, GameView {
         if (selected.isPresent()) {
             Creature creature = selected.get();
             String type = creature.getClass().getSimpleName();
+            type = type.replace("Creature", "Zombie");
             if (creature instanceof Cluster) {
                 type = "Cluster (" + ((Cluster) creature).getMembers().size() + " members)";
             }

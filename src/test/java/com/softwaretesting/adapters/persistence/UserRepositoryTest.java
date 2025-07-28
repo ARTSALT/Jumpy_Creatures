@@ -122,6 +122,63 @@ class UserRepositoryTest {
     }
 
     @Nested
+    @DisplayName("Testes para os métodos de atualização (update)")
+    class UpdateTests {
+
+        @Test
+        @DisplayName("update() deve chamar executeUpdate com os parâmetros corretos")
+        void updateShouldCallExecuteUpdateWithCorrectParameters() throws SQLException {
+            // Ação
+            userRepository.update(testUser);
+
+            // Verificação: Garante que os dados corretos foram passados para o PreparedStatement
+            verify(mockPs).setString(1, testUser.getPassword());
+            verify(mockPs).setString(2, testUser.getAvatarUrl());
+            verify(mockPs).setInt(3, testUser.getScore());
+            verify(mockPs).setString(4, testUser.getUsername());
+
+            // Verifica se a operação de atualização foi de fato executada
+            verify(mockPs, times(1)).executeUpdate();
+        }
+
+        @Test
+        @DisplayName("update() deve propagar SQLException em caso de erro no banco")
+        void updateShouldPropagateSqlExceptionOnDbError() throws SQLException {
+            // Configura o mock para lançar uma exceção ao executar o update
+            when(mockPs.executeUpdate()).thenThrow(new SQLException("Erro de atualização"));
+
+            // Ação e Verificação
+            assertThatThrownBy(() -> userRepository.update(testUser))
+                .isInstanceOf(SQLException.class)
+                .hasMessage("Erro de atualização");
+        }
+
+        @Test
+        @DisplayName("updateScore() deve chamar executeUpdate com os parâmetros corretos")
+        void updateScoreShouldCallExecuteUpdateWithCorrectParameters() throws SQLException {
+            // Ação
+            userRepository.updateScore(testUser);
+
+            // Verificação
+            verify(mockPs).setInt(1, testUser.getScore());
+            verify(mockPs).setString(2, testUser.getUsername());
+            verify(mockPs, times(1)).executeUpdate();
+        }
+
+        @Test
+        @DisplayName("updateScore() deve propagar SQLException em caso de erro no banco")
+        void updateScoreShouldPropagateSqlExceptionOnDbError() throws SQLException {
+            // Configura o mock para lançar uma exceção
+            when(mockPs.executeUpdate()).thenThrow(new SQLException("Erro de atualização de score"));
+
+            // Ação e Verificação
+            assertThatThrownBy(() -> userRepository.updateScore(testUser))
+                .isInstanceOf(SQLException.class)
+                .hasMessage("Erro de atualização de score");
+        }
+    }
+
+    @Nested
     @DisplayName("Testes para o método findByUsername()")
     class FindByUsernameTests {
 

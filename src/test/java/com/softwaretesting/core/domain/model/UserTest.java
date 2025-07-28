@@ -126,6 +126,18 @@ public class UserTest {
         assertThat(user.getScore()).isEqualTo(0);
     }
 
+    @DisplayName("Testa criação de usuário com id e nome de usuário válidos")
+    @Test
+    public void testUserCreationWithIdAndUsername() {
+        User user = new User(1L, "username");
+
+        assertThat(user.getId()).isEqualTo(1L);
+        assertThat(user.getUsername()).isEqualTo("username");
+        assertThat(user.getPassword()).isNull();
+        assertThat(user.getAvatarUrl()).isEqualTo(User.DEFAULT_AVATAR_URL);
+        assertThat(user.getScore()).isEqualTo(0);
+    }
+
     @DisplayName("Testa criação de usuário com ID inválido")
     @Test
     public void testUserCreationWithInvalidId() {
@@ -140,7 +152,7 @@ public class UserTest {
     @DisplayName("Testa criação de usuário com nome de usuário inválido")
     @Test
     public void testUserCreationWithInvalidUsername() {
-        assertThatThrownBy(() -> new User(null, "password123"))
+        assertThatThrownBy(() -> new User((String) null, "password123"))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Username cannot be null or blank");
         assertThatThrownBy(() -> new User("", "password123"))
@@ -175,7 +187,7 @@ public class UserTest {
         @Test
         @DisplayName("Construtor deve lançar exceção para nome de usuário nulo")
         void constructorShouldThrowExceptionForNullUsername() {
-            assertThatThrownBy(() -> new User(null, "password"))
+            assertThatThrownBy(() -> new User((String) null, "password"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Username cannot be null or blank");
         }
@@ -319,7 +331,7 @@ public class UserTest {
                 User user2 = new User("user1", "pass1");
 
                 // O metodo hashCode não deve lançar NullPointerException
-                assertThatCode(() -> user1.hashCode()).doesNotThrowAnyException();
+                assertThatCode(user1::hashCode).doesNotThrowAnyException();
                 // Verifica se o contrato ainda é mantido
                 assertThat(user1.hashCode()).isEqualTo(user2.hashCode());
             }

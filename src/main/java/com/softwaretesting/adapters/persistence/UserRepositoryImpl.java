@@ -95,12 +95,10 @@ public class UserRepositoryImpl implements UserRepository {
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
+                rs.next();
+                return rs.getInt(1) > 0;
             }
         }
-        return false;
     }
 
     @Override

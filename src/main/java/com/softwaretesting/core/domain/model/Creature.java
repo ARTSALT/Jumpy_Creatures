@@ -78,11 +78,15 @@ public class Creature {
     public double getPosition() { return position; }
     public double getTargetPosition() { return targetPosition; }
     public void setTargetPosition(double targetPosition) { this.targetPosition = targetPosition; }
+    public static void resetIdCounter() {
+        nextId = 0;
+    }
 
     @Override
     public String toString() {
         String type = this.getClass().getSimpleName();
-        if(type.isEmpty()) type = "Creature";
+        type = type.replace("Creature", "Zombie");
+        if(type.isEmpty()) type = "Zombie";
         return String.format("%s[id=%d]{moedas=%d, posicao=%.2f}", type, id, coins, position);
     }
 

@@ -38,23 +38,15 @@ public class SimulationRepositoryImpl implements SimulationRepository {
             ps.setInt(3, simulation.getInitialNumCreatures());
             ps.setInt(4, simulation.getIterations());
             ps.setBoolean(5, simulation.isSuccessful());
-
-            int affectedRows = ps.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Failed to insert simulation, no rows affected.");
-            }
+            ps.executeUpdate();
 
             try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    long id = generatedKeys.getLong("id");
-                    Timestamp createdAt = generatedKeys.getTimestamp("created_at");
+                generatedKeys.next();
+                long id = generatedKeys.getLong("id");
+                Timestamp createdAt = generatedKeys.getTimestamp("created_at");
 
-                    simulation.setId(id);
-                    simulation.setCreatedAt(createdAt.toLocalDateTime());
-
-                } else {
-                    throw new SQLException("Creating simulation failed, no ID obtained.");
-                }
+                simulation.setId(id);
+                simulation.setCreatedAt(createdAt.toLocalDateTime());
             }
         }
     }
@@ -108,8 +100,9 @@ public class SimulationRepositoryImpl implements SimulationRepository {
             "FROM simulations s " +
             "JOIN users u ON s.user_id = u.id";
 
-        try (var ps = connectionProvider.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        var ps = connectionProvider.prepareStatement(sql);
+        ResultSet rs = ps.executeQuery();
+        try {
             List<Simulation> simulations = new ArrayList<>();
             while (rs.next()) {
                 int numCreatures = rs.getInt("num_creatures");
@@ -161,11 +154,8 @@ public class SimulationRepositoryImpl implements SimulationRepository {
         try (var ps = connectionProvider.prepareStatement(sql)) {
             ps.setLong(1, id);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                } else {
-                    throw new SQLException("Failed to count simulations for user ID: " + id);
-                }
+                rs.next();
+                return rs.getInt(1);
             }
         } catch (SQLException e) {
             throw new SQLException("Error counting simulations for user ID: " + id, e);

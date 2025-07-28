@@ -76,7 +76,7 @@ public class H2ConnectionProvider implements ConnectionProvider {
 		}
 
 		public H2ConnectionProvider build() {
-			if (database == null || database.isEmpty()) {
+			if (database == null) {
 				database = "usersdb"; // nome padrão do banco de dados
 			}
 			if (url == null || url.isEmpty()) {

@@ -9,7 +9,6 @@ import java.util.*;
  */
 public class Simulation {
 
-    // --- ESTADO E PROPRIEDADES GERAIS ---
     private Long id;
     private final RandomProvider randomProvider;
     private final double factor;
@@ -20,17 +19,9 @@ public class Simulation {
     public boolean isFinished;
     private boolean isSuccessful;
     private String finalMessage = "Simulation ended unexpectedly.";
-
-    // --- ESTADO UNIFICADO PARA AMBOS OS MODOS ---
-    public enum SimulationState { READY_TO_PREPARE, READY_TO_UPDATE, READY_TO_RESOLVE, FINISHED }
-    private SimulationState currentState = SimulationState.READY_TO_PREPARE;
     private int currentIteration = 0;
-
-    // --- ESTADO PARA MODO TURNO ---
     private int turnBasedCreatureIndex = -1;
     private boolean guardianHasActedInRound = false;
-
-    // --- INFORMAÇÕES DO USUÁRIO ---
     private User user;
     private String name;
     private LocalDateTime createdAt;
@@ -50,21 +41,21 @@ public class Simulation {
         this.initialNumCreatures = numCreatures;
 
         for (int i = 0; i < numCreatures; i++) {
-            double initialPosition = randomProvider.nextDouble(0, horizonWidth);
+            double initialPosition = randomProvider.nextDouble(-horizonWidth, horizonWidth);
             creatures.add(new Creature(1_000_000, initialPosition));
         }
         this.creatures.add(new Guardian(0.0));
     }
 
-    public Simulation(int numCreatures, int iterations, int horizonWidth) {
-        this(numCreatures, 1.0, horizonWidth, iterations, (min, max) -> {
+    public Simulation(int numCreatures, int maxIterations, int horizonWidth) {
+        this(numCreatures, 1.0, horizonWidth, maxIterations, (min, max) -> {
             Random random = new Random();
             return min + (max - min) * random.nextDouble();
         });
     }
 
-    public Simulation(int numCreatures, int iterations, int horizonWidth, RandomProvider randomProvider) {
-        this(numCreatures, 1.0, horizonWidth, iterations, randomProvider);
+    public Simulation(int numCreatures, int maxIterations, int horizonWidth, RandomProvider randomProvider) {
+        this(numCreatures, 1.0, horizonWidth, maxIterations, randomProvider);
     }
 
     private record CollisionResult(boolean collisionOccurred, boolean entityWasAbsorbed, Optional<Creature> newEntity) {
@@ -82,7 +73,7 @@ public class Simulation {
         }
     }
 
-    // --- LÓGICA PARA O MODO DE TURNOS INDIVIDUAIS ---
+    // métodos de processamento por turnos
 
     public void runToEnd() {
         System.out.println("\n--- EXECUTANDO SIMULAÇÃO ATÉ O FIM ---");
@@ -161,9 +152,7 @@ public class Simulation {
                 break;
             }
 
-            if (result.newEntity().isPresent()) {
-                currentEntity = result.newEntity().get();
-            }
+            currentEntity = result.newEntity().orElseThrow();
         }
 
         if (!wasAbsorbed && !(currentEntity instanceof Guardian)) {
@@ -172,7 +161,6 @@ public class Simulation {
 
         checkEndCondition();
         printResults();
-
     }
 
     private void findAndStealFromClosest(Creature stealer) {
@@ -200,18 +188,22 @@ public class Simulation {
             movedCreature.getClass().getSimpleName(), movedCreature.getId(),
             otherCreature.getClass().getSimpleName(), otherCreature.getId());
 
-        Guardian guardian = (movedCreature instanceof Guardian) ? (Guardian) movedCreature
-            : (otherCreature instanceof Guardian) ? (Guardian) otherCreature : null;
-        Cluster cluster = (movedCreature instanceof Cluster) ? (Cluster) movedCreature
-            : (otherCreature instanceof Cluster) ? (Cluster) otherCreature : null;
+        // Caso 1: Guardião colide com Cluster (qualquer ordem)
+        if ((movedCreature instanceof Guardian && otherCreature instanceof Cluster) ||
+            (movedCreature instanceof Cluster && otherCreature instanceof Guardian)) {
 
-        if (guardian != null && cluster != null) {
+            Guardian guardian = (movedCreature instanceof Guardian) ? (Guardian) movedCreature
+                : (Guardian) otherCreature;
+            Cluster cluster = (movedCreature instanceof Cluster) ? (Cluster) movedCreature
+                : (Cluster) otherCreature;
+
             System.out.printf("Guardião %d absorveu Cluster %d.\n", guardian.getId(), cluster.getId());
             guardian.absorbCluster(cluster);
             creatures.remove(cluster);
             return CollisionResult.entityAbsorbed();
         }
 
+        // Caso 2: Criatura (que se moveu) é absorvida por um Cluster (parado)
         if (otherCreature instanceof Cluster) {
             System.out.printf("Cluster %d absorveu %s %d.\n",
                 otherCreature.getId(), movedCreature.getClass().getSimpleName(), movedCreature.getId());
@@ -219,6 +211,8 @@ public class Simulation {
             creatures.remove(movedCreature);
             return CollisionResult.entityAbsorbed();
         }
+
+        // Caso 3: Cluster (que se moveu) absorve outra criatura
         if (movedCreature instanceof Cluster) {
             System.out.printf("Cluster %d absorveu %s %d.\n",
                 movedCreature.getId(), otherCreature.getClass().getSimpleName(), otherCreature.getId());
@@ -227,6 +221,7 @@ public class Simulation {
             return CollisionResult.entityModified(movedCreature);
         }
 
+        // Caso 4: Duas Creatures normais formam um novo Cluster
         if (!(movedCreature instanceof Guardian) && !(otherCreature instanceof Guardian)) {
             Cluster newCluster = new Cluster(movedCreature, otherCreature);
             System.out.printf("Criado novo Cluster %d a partir de %d e %d.\n",
@@ -261,107 +256,9 @@ public class Simulation {
         return creatures.stream().filter(c -> c instanceof Guardian).findFirst();
     }
 
-    // --- LÓGICA PARA O MODO DE ITERAÇÃO (TODOS DE UMA VEZ) ---
-
-    public void prepare() {
-        if (currentState != SimulationState.READY_TO_PREPARE) return;
-        if (currentIteration >= maxIterations) {
-            this.currentState = SimulationState.FINISHED;
-            return;
-        }
-        this.currentIteration++;
-        System.out.printf("\n----- Preparando a Iteração %d -----\n", this.currentIteration);
-        for (Creature creature : creatures) {
-            creature.resetTurnDelta();
-            calculateTargetPosition(creature);
-        }
-        this.currentState = SimulationState.READY_TO_UPDATE;
-    }
-
-    public void update() {
-        if (currentState != SimulationState.READY_TO_UPDATE) return;
-        System.out.println("----- Atualizando Posições -----");
-        for (Creature creature : creatures) {
-            creature.commitPosition();
-        }
-        this.currentState = SimulationState.READY_TO_RESOLVE;
-    }
-
-    public void resolve() {
-        if (currentState != SimulationState.READY_TO_RESOLVE) return;
-        System.out.println("----- Resolvendo Colisões e Ações -----");
-        handleCollisionsAndActions();
-        if (isVictoryConditionMet()) {
-            isSuccessful = true;
-            this.currentState = SimulationState.FINISHED;
-        } else if (currentIteration >= maxIterations) {
-            this.currentState = SimulationState.FINISHED;
-        } else {
-            this.currentState = SimulationState.READY_TO_PREPARE;
-        }
-        printResults();
-    }
-
-    public boolean executeNextIteration() {
-        if (currentState == SimulationState.FINISHED) return false;
-        if (currentState == SimulationState.READY_TO_PREPARE && currentIteration >= maxIterations) {
-            this.currentState = SimulationState.FINISHED;
-            return false;
-        }
-        if (currentState == SimulationState.READY_TO_PREPARE) prepare();
-        if (currentState == SimulationState.READY_TO_UPDATE) update();
-        resolve();
-        return true;
-    }
-
-    private void handleCollisionsAndActions() {
-        List<Creature> newClusters = new ArrayList<>();
-        Set<Creature> toRemove = new HashSet<>();
-        List<Creature> creaturesView = new ArrayList<>(this.creatures);
-        for (int i = 0; i < creaturesView.size(); i++) {
-            Creature c1 = creaturesView.get(i);
-            if (toRemove.contains(c1)) continue;
-            for (int j = i + 1; j < creaturesView.size(); j++) {
-                Creature c2 = creaturesView.get(j);
-                if (Math.abs(c1.getPosition() - c2.getPosition()) < creatureWidth / 2.0) {
-                    resolveCollision(c1, c2, newClusters, toRemove);
-                }
-            }
-        }
-        this.creatures.removeAll(toRemove);
-        this.creatures.addAll(newClusters);
-        for (Creature newCreature : newClusters) {
-            if (newCreature instanceof Cluster) {
-                findAndStealFromClosest(newCreature);
-            }
-        }
-    }
-
-    private void resolveCollision(Creature c1, Creature c2, List<Creature> toAdd, Set<Creature> toRemove) {
-        if (c1 instanceof Guardian && c2 instanceof Cluster) {
-            ((Guardian) c1).absorbCluster((Cluster) c2);
-            toRemove.add(c2);
-        } else if (c2 instanceof Guardian && c1 instanceof Cluster) {
-            ((Guardian) c2).absorbCluster((Cluster) c1);
-            toRemove.add(c1);
-        } else if (c1 instanceof Cluster) {
-            ((Cluster) c1).addMember(c2);
-            toRemove.add(c2);
-        } else if (c2 instanceof Cluster) {
-            ((Cluster) c2).addMember(c1);
-            toRemove.add(c1);
-        } else if (!(c1 instanceof Guardian)) {
-            Cluster cluster = new Cluster(c1, c2);
-            toAdd.add(cluster);
-            toRemove.add(c1);
-            toRemove.add(c2);
-        }
-    }
-
-    // --- MÉTODOS AUXILIARES E GETTERS/SETTERS ---
+    // métodos auxiliares
 
     private void checkEndCondition() {
-        if (isFinished) return;
         if (creatures.size() == 1 && creatures.getFirst() instanceof Guardian) {
             this.isFinished = true;
             this.isSuccessful = true;
@@ -373,9 +270,9 @@ public class Simulation {
                 c -> c instanceof Guardian).findFirst().orElse(null);
             Creature other = creatures.stream().filter(
                 c -> !(c instanceof Guardian)).findFirst().orElse(null);
-            if (guardian != null && other != null && other.getClass() == Creature.class) {
+            if (Objects.requireNonNull(other).getClass() == Creature.class) {
                 this.isFinished = true;
-                if (guardian.getCoins() > other.getCoins()) {
+                if (Objects.requireNonNull(guardian).getCoins() > other.getCoins()) {
                     this.isSuccessful = true;
                     this.finalMessage = "SUCCESS! The guardian has more coins than the final creature.";
                 } else {
@@ -386,15 +283,10 @@ public class Simulation {
         }
     }
 
-    private boolean isVictoryConditionMet() {
-        if (creatures.size() == 1 && creatures.get(0) instanceof Guardian) return true;
-        if (creatures.size() == 2) {
-            Creature c1 = creatures.get(0);
-            Creature c2 = creatures.get(1);
-            return (c1 instanceof Guardian && c1.getCoins() > c2.getCoins()) ||
-                (c2 instanceof Guardian && c2.getCoins() > c1.getCoins());
-        }
-        return false;
+    private void calculateTargetPosition(Creature creature) {
+        double r = randomProvider.nextDouble(-1, 1);
+        double newPosition = creature.getPosition() + r * creature.getCoins() * factor;
+        creature.setTargetPosition(newPosition);
     }
 
     public void printResults() {
@@ -411,19 +303,15 @@ public class Simulation {
         System.out.printf(">>> Soma total de moedas (excluindo guardião): %,d\n", totalCoinsInPlay);
     }
 
-    private void calculateTargetPosition(Creature creature) {
-        double r = randomProvider.nextDouble(-1, 1);
-        double newPosition = creature.getPosition() + r * creature.getCoins() * factor;
-        creature.setTargetPosition(newPosition);
-    }
+    // getters e setters
 
     public boolean isFinished() { return isFinished; }
     public List<Creature> getCreatures() { return creatures; }
-    public SimulationState getCurrentState() { return currentState; }
     public int getIterations() { return currentIteration; }
     public void setIterations(int iterations) { this.currentIteration = iterations; }
     public boolean isSuccessful() { return isSuccessful; }
     public void setSuccessful(boolean successful) { this.isSuccessful = successful; }
+    public double getCreatureWidth() { return creatureWidth; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
     public String getName() { return name; }

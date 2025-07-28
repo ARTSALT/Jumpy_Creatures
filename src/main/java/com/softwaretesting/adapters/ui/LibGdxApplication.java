@@ -93,31 +93,28 @@ public class LibGdxApplication extends Game {
         }
     }
 
+    // Getters e Setters para recursos compartilhados
+
     public SpriteBatch getSpriteBatch() {
         return spriteBatch;
     }
-
     public ShapeRenderer getShapeRenderer() {
         return shapeRenderer;
     }
-
     public Skin getSkin() {
         return skin;
     }
-
     public BitmapFont getFont() {
         return font;
     }
-
     public DatabaseFactory getDatabaseFactory() {
         return databaseFactory;
     }
-
     public User getCurrentUser() {
         return user;
     }
-
     public void setCurrentUser(User user) {
         this.user = user;
     }
+    public void setFont(BitmapFont font) { this.font = font; }
 }

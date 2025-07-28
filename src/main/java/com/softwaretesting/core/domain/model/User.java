@@ -39,6 +39,7 @@ public class User {
     public User(Long id, String username) {
         this.id = id;
         setUsername(username);
+        setAvatarUrl(DEFAULT_AVATAR_URL);
     }
 
     public Long getId() {

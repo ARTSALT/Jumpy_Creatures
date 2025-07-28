@@ -172,7 +172,6 @@ public class GamePresenter {
         view.showGameOver(success, finalMessage);
     }
 
-    // --- Outros métodos (onZombieSelected, getArrowTarget, etc.) ---
     public void onZombieSelected(int creatureId) {
         if (this.selectedCreatureId != null && this.selectedCreatureId == creatureId) {
             this.selectedCreatureId = null;
@@ -180,19 +179,24 @@ public class GamePresenter {
             this.selectedCreatureId = creatureId;
         }
     }
+
     public void onBackgroundClicked() { this.selectedCreatureId = null; }
     public void onToggleColliders() { this.showColliders = !this.showColliders; }
+
     public void onManualZoom(float amount) {
         if (!isGameRunning()) return;
         OrthographicCamera camera = view.getGameCamera();
         float newZoom = Math.max(0.1f, camera.zoom + amount);
         view.setGameCameraZoom(newZoom);
     }
+
     public void onExit() { view.stopMusic(); application.navigateTo(new UserScreen(application)); }
+
     public Optional<Creature> getSelectedCreature() {
         if (selectedCreatureId == null || simulation == null) return Optional.empty();
         return simulation.getCreatures().stream().filter(c -> c.getId() == selectedCreatureId).findFirst();
     }
+
     public boolean areCollidersVisible() { return this.showColliders; }
     public boolean isGameRunning() { return simulation != null && !simulation.isFinished(); }
     public Optional<Creature> getArrowTarget() { return arrowTarget; }
