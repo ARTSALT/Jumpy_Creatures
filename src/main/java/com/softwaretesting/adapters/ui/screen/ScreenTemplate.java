@@ -106,11 +106,6 @@ public class ScreenTemplate implements Screen, View {
     }
 
     @Override
-    public void disposeScreen() {
-        dispose();
-    }
-
-    @Override
     public void show() { Gdx.input.setInputProcessor(stage); }
 
     /**
