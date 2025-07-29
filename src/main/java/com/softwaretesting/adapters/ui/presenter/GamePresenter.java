@@ -5,7 +5,7 @@ import com.softwaretesting.adapters.ui.LibGdxApplication;
 import com.softwaretesting.adapters.ui.screen.UserScreen;
 import com.softwaretesting.adapters.ui.view.GameView;
 import com.softwaretesting.adapters.ui.view.View;
-import com.softwaretesting.core.application.service.SimulationService;
+import com.softwaretesting.core.service.SimulationService;
 import com.softwaretesting.core.domain.model.*;
 
 import java.io.IOException;

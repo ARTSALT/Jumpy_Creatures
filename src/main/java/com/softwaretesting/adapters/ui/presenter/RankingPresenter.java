@@ -4,8 +4,8 @@ import com.softwaretesting.adapters.ui.LibGdxApplication;
 import com.softwaretesting.adapters.ui.dto.UserRankingDTO;
 import com.softwaretesting.adapters.ui.screen.LoginScreen;
 import com.softwaretesting.adapters.ui.view.RankingView;
-import com.softwaretesting.core.application.service.SimulationService;
-import com.softwaretesting.core.application.service.UserService;
+import com.softwaretesting.core.service.SimulationService;
+import com.softwaretesting.core.service.UserService;
 import com.softwaretesting.core.domain.model.Simulation;
 
 import java.io.IOException;

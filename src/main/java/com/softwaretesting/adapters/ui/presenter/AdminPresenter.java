@@ -5,7 +5,7 @@ import com.softwaretesting.adapters.ui.screen.AdminScreen;
 import com.softwaretesting.adapters.ui.screen.LoginScreen;
 import com.softwaretesting.adapters.ui.screen.RankingScreen;
 import com.softwaretesting.adapters.ui.view.AdminView;
-import com.softwaretesting.core.application.service.SimulationService;
+import com.softwaretesting.core.service.SimulationService;
 import com.softwaretesting.core.domain.model.Simulation;
 import com.softwaretesting.core.domain.model.User;
 

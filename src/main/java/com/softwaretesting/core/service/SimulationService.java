@@ -1,4 +1,4 @@
-package com.softwaretesting.core.application.service;
+package com.softwaretesting.core.service;
 
 import com.softwaretesting.core.domain.model.Simulation;
 import com.softwaretesting.core.domain.model.User;

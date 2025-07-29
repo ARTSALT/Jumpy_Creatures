@@ -1,7 +1,7 @@
 package com.softwaretesting.adapters.persistence;
 
-import com.softwaretesting.core.application.service.SimulationService;
-import com.softwaretesting.core.application.service.UserService;
+import com.softwaretesting.core.service.SimulationService;
+import com.softwaretesting.core.service.UserService;
 import com.softwaretesting.core.domain.port.driven.SimulationRepository;
 import com.softwaretesting.core.domain.port.driven.UserRepository;
 

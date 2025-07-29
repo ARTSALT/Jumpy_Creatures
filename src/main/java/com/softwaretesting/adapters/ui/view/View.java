@@ -22,9 +22,4 @@ public interface View {
      * @param type O tipo da mensagem, que pode ser INFO, ERROR, WARNING ou SUCCESS.
      */
     void showMessage(String message, MessageType type);
-
-    /**
-     * Libera os recursos desta tela, chamado quando a navegação de uma view a outra ocorre.
-     */
-    void disposeScreen();
 }

@@ -7,10 +7,9 @@ import com.softwaretesting.adapters.ui.dto.SimulationSummaryDTO;
 import com.softwaretesting.adapters.ui.screen.GameScreen;
 import com.softwaretesting.adapters.ui.screen.LoginScreen;
 import com.softwaretesting.adapters.ui.screen.RankingScreen;
-import com.softwaretesting.adapters.ui.screen.StatisticsScreen;
 import com.softwaretesting.adapters.ui.view.UserView;
-import com.softwaretesting.core.application.service.SimulationService;
-import com.softwaretesting.core.application.service.UserService;
+import com.softwaretesting.core.service.SimulationService;
+import com.softwaretesting.core.service.UserService;
 import com.softwaretesting.core.domain.model.Simulation;
 import com.softwaretesting.core.domain.model.User;
 
@@ -94,14 +93,6 @@ public class UserPresenter {
      */
     public void onRunNewSimulationClicked() {
         application.navigateTo(new GameScreen(application));
-    }
-
-    /**
-     * Metodo chamado quando o usuário clica sobre um card de simulação na lista de simulações.
-     * Fecha a tela atual do usuário e abre a tela de estatísticas, com detalhes específicos da simulação selecionada.
-     */
-    public void onSimulationClicked(Long id) {
-        application.navigateTo(new StatisticsScreen(application, id));
     }
 
     /**

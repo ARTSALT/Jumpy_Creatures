@@ -49,10 +49,7 @@ public class LibGdxApplication extends Game {
         while (!navigationStack.isEmpty()) {
             navigationStack.pop().dispose();
         }
-        if (getScreen() != null) {
-            getScreen().dispose();
-        }
-
+        getScreen().dispose();
         spriteBatch.dispose();
         shapeRenderer.dispose();
         skin.dispose();
@@ -66,9 +63,7 @@ public class LibGdxApplication extends Game {
      */
     public void navigateTo(Screen newScreen) {
         Screen oldScreen = getScreen();
-        if (oldScreen != null) {
-            navigationStack.push(oldScreen);
-        }
+        navigationStack.push(oldScreen);
         setScreen(newScreen);
     }
 
@@ -116,5 +111,4 @@ public class LibGdxApplication extends Game {
     public void setCurrentUser(User user) {
         this.user = user;
     }
-    public void setFont(BitmapFont font) { this.font = font; }
 }

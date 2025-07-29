@@ -9,7 +9,6 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.softwaretesting.core.domain.model.Cluster;
 import com.softwaretesting.core.domain.model.Creature;
-import com.softwaretesting.core.domain.model.ParabolicMovement;
 
 import java.util.Arrays;
 

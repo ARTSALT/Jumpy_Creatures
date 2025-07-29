@@ -162,25 +162,7 @@ public class UserScreen extends ScreenTemplate implements UserView {
         card.add(new Label(simulationDTO.wasSuccessful() ? "SUCCESS" : "FAILED", skin, "font",
             simulationDTO.wasSuccessful() ? Color.GREEN : Color.RED)).colspan(2).align(Align.right);
 
-        card.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, Actor actor) {
-                presenter.onSimulationClicked(simulationDTO.id());
-            }
-        });
-
         return card;
-    }
-
-    @Override
-    public void showDetailedSimulationView(int simulationId) {
-        // cria um pop-up para mostrar os detalhes da simulação
-        new Dialog("Simulation " + simulationId, skin) {
-            {
-                text("Detailed information about the simulation goes here.");
-                button("Close");
-            }
-        }.show(stage);
     }
 
     private void createListeners() {

@@ -34,12 +34,4 @@ public interface UserView extends View {
      * @param simulations Uma lista de resumos de simulações para exibir.
      */
     void displaySimulationList(List<SimulationSummaryDTO> simulations);
-
-    /**
-     * Abre uma nova janela ou pop-up para mostrar os detalhes de uma simulação específica.
-     * O Presenter será responsável por buscar os dados detalhados.
-     *
-     * @param simulationId O ID da simulação a ser detalhada.
-     */
-    void showDetailedSimulationView(int simulationId);
 }

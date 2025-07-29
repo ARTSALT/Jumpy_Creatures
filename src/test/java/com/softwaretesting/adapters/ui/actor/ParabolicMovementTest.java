@@ -1,4 +1,4 @@
-package com.softwaretesting.core.domain.model;
+package com.softwaretesting.adapters.ui.actor;
 
 import com.badlogic.gdx.math.Vector2;
 import net.jqwik.api.*;

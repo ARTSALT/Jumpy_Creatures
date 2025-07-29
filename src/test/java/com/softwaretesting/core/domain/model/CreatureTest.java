@@ -193,17 +193,17 @@ class CreatureTest {
                 Creature creature = new Creature(100, 50.55);
                 String result = creature.toString();
 
-                assertThat(result).startsWith("Creature[");
+                assertThat(result).startsWith("Zombie[");
                 assertThat(result).contains("id=" + creature.getId());
                 assertThat(result).contains("moedas=100");
                 assertThat(result).contains("posicao=50,55");
             }
 
             @Test
-            @DisplayName("toString deve usar 'Creature' como fallback se o nome da classe for vazio")
+            @DisplayName("toString deve usar 'Zombie' como fallback se o nome da classe for vazio")
             void toStringShouldUseFallbackForEmptyClassName() {
                 Creature creatureWithEmptyName = new Creature(100, 50.0) {};
-                String expected = String.format("Creature[id=%d]{moedas=100, posicao=50,00}", creatureWithEmptyName.getId());
+                String expected = String.format("Zombie[id=%d]{moedas=100, posicao=50,00}", creatureWithEmptyName.getId());
                 assertThat(creatureWithEmptyName.toString()).isEqualTo(expected);
             }
 

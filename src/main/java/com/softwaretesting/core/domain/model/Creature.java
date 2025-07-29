@@ -64,12 +64,18 @@ public class Creature {
         }
     }
 
-    public int getLastCoinsDelta() {
-        return lastCoinsDelta;
+    public void setPosition(double i) {
+        if (i < 0) {
+            throw new IllegalArgumentException("A posição não pode ser negativa.");
+        }
+        this.position = i;
+        this.targetPosition = i;
     }
 
-    public void resetTurnDelta() {
-        this.lastCoinsDelta = 0;
+    public int stealFrom(Creature otherCreature) {
+        int stolenCoins = otherCreature.halveCoins();
+        this.addCoins(stolenCoins);
+        return stolenCoins;
     }
 
     // Getters e Setters
@@ -78,6 +84,12 @@ public class Creature {
     public double getPosition() { return position; }
     public double getTargetPosition() { return targetPosition; }
     public void setTargetPosition(double targetPosition) { this.targetPosition = targetPosition; }
+    public int getLastCoinsDelta() {
+        return lastCoinsDelta;
+    }
+    public void resetTurnDelta() {
+        this.lastCoinsDelta = 0;
+    }
     public static void resetIdCounter() {
         nextId = 0;
     }
@@ -101,19 +113,5 @@ public class Creature {
     @Override
     public int hashCode() {
         return Objects.hash(id);
-    }
-
-    public void setPosition(double i) {
-        if (i < 0) {
-            throw new IllegalArgumentException("A posição não pode ser negativa.");
-        }
-        this.position = i;
-        this.targetPosition = i;
-    }
-
-    public int stealFrom(Creature otherCreature) {
-        int stolenCoins = otherCreature.halveCoins();
-        this.addCoins(stolenCoins);
-        return stolenCoins;
     }
 }

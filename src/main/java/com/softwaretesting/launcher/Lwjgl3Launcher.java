@@ -8,16 +8,13 @@ import com.softwaretesting.adapters.ui.LibGdxApplication;
 
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {
-    public static LibGdxApplication game;
-
-    public static LibGdxApplication launch(DatabaseFactory databaseFactory) {
-        if (StartupHelper.startNewJvmIfRequired()) return null; // This handles macOS support and helps on Windows.
-        return createApplication(databaseFactory);
+    public static void launch(DatabaseFactory databaseFactory) {
+        if (StartupHelper.startNewJvmIfRequired()) return; // This handles macOS support and helps on Windows.
+        createApplication(databaseFactory);
     }
 
-    private static LibGdxApplication createApplication(DatabaseFactory databaseFactory) {
-        new Lwjgl3Application(game = new LibGdxApplication(databaseFactory), getDefaultConfiguration());
-        return game;
+    private static void createApplication(DatabaseFactory databaseFactory) {
+        new Lwjgl3Application(new LibGdxApplication(databaseFactory), getDefaultConfiguration());
     }
 
     private static Lwjgl3ApplicationConfiguration getDefaultConfiguration() {
